@@ -1,0 +1,1 @@
+for the first commit the empty files and folders don't go, so added a screenshot of how it must look like (folder_structure.png)
