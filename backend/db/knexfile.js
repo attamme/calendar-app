@@ -3,14 +3,16 @@
 /**
  * @type { Object.<string, import("knex").Knex.Config> }
  */
+require("dotenv").config();
 const path = require("path");
 module.exports = {
 
   development: {
     client: 'better-sqlite3',
     connection: {
-      filename: path.resolve(__dirname, "db.sqlite3"),
-    }
+      filename: path.resolve(__dirname, process.env.DATABASE),
+    },
+    useNullAsDefault: true
   },
 
 };
