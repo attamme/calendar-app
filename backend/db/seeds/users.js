@@ -4,11 +4,12 @@
  */
 exports.seed = async function(knex) {
   
-  const row = (o) => {
-    id = o.id;
-    username = o.username;
-    password = o.password;
-    isAdmin = o.isAdmin;
+  const row = (o) => { return {
+    id: o.id,
+    username: o.username,
+    password: o.password,
+    isAdmin: o.isAdmin,
+    }
   }
 
   const data = [
@@ -20,9 +21,5 @@ exports.seed = async function(knex) {
     })]
 
   await knex('users').del()
-  await knex('users').insert([
-    {id: 1, colName: 'rowValue1'},
-    {id: 2, colName: 'rowValue2'},
-    {id: 3, colName: 'rowValue3'}
-  ]);
+  await knex('users').insert(data);
 };
