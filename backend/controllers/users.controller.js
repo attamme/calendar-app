@@ -35,13 +35,8 @@ async function Login(req, res) {
         if (!user) {res.status(401).send("wrong username or password");} else {
             const check = await bcrypt.compare(req.body.password, user.password);
             if (check) {
-            const user_cookie = JWT.sign({sub: user.id}, process.env.JWT_SECRET, { expiresIn: "1h" })
-            res.cookie("login_token", user_cookie, 
-                {
-                httpOnly: true,
-                secure: false
-                })
-            res.send("login ok");
+            const user_token = JWT.sign({sub: user.id}, process.env.JWT_SECRET, { expiresIn: "1h" })
+            res.json(user_token)
              } else {
             res.status(401).send("wrong username or password");
         }
