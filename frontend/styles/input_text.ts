@@ -6,14 +6,15 @@ export const styles = StyleSheet.create({
         marginBottom: 20,
     },
     label: {
-        color: colors.blue,
+        color: colors.text,
         fontSize: 14,
         fontWeight: 500,
         marginVertical: 8
     },
     inputContainer: {
-        borderRadius: 14,
-        borderColor: colors.grey,
+        borderRadius: 100,
+        borderColor: colors.second,
+        backgroundColor: colors.second,
         borderWidth: 1,
         flexDirection: "row",
         alignItems: "center"
@@ -22,6 +23,10 @@ export const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 20,
         flex: 1
+    },
+    placeholder: {
+        fontSize: 15,
+        color: colors.subtext
     },
     eye: {
         width: 24,
