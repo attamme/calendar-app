@@ -1,16 +1,19 @@
-import { Text, View } from "react-native";
+import { Text, View, Keyboard, KeyboardAvoidingView, Platform, Pressable } from "react-native";
 import Button from "@/components/button";
+import InputText from "@/components/InputText";
 
 export default function Index() {
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Button title="Button"/>
-    </View>
+
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>
+        <View>
+          <Text>Edit app/index.tsx to edit this screen.</Text>
+          <InputText label="Text" placeholder="Text"/>
+          <InputText label="Password" placeholder="**********" secure />
+          <Button title="Button"/>
+        </View>
+      </Pressable>
+    </KeyboardAvoidingView>
   );
 };
