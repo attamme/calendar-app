@@ -1,17 +1,13 @@
 import { Text, View } from "react-native";
 import InputText from "@/components/InputText";
+import { styles } from "@/styles/test";
 
 export default function Index() {
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
+    <View style={styles.container}>
       <Text>Edit app/index.tsx to edit this screen.</Text>
-      <InputText placeholder="Text"/>
+      <InputText label="Text" placeholder="Text"/>
+      <InputText label="Password" placeholder="**********" secure />
     </View>
   );
 }

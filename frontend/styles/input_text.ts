@@ -1,23 +1,31 @@
 import { StyleSheet } from "react-native";
+import { colors } from "./colors";
 
 export const styles = StyleSheet.create({
-    inputText: {
-        height: 48,
-        backgroundColor: "#50577a",
-        alignItems: "center",
-        paddingHorizontal: 138,
-        paddingVertical: 14,
-        gap: 10,
-        borderRadius: 100
+    container: {
+        marginBottom: 20,
     },
-    text: {
-        height: 18,
-        width: "100%",
-        position: "absolute",
-        top: 15,
-        left: 19,
-        fontSize: 15,
-        fontFamily: "Inter-Regular",
-        color: "#eee",
+    label: {
+        color: colors.blue,
+        fontSize: 14,
+        fontWeight: 500,
+        marginVertical: 8
+    },
+    inputContainer: {
+        borderRadius: 14,
+        borderColor: colors.grey,
+        borderWidth: 1,
+        flexDirection: "row",
+        alignItems: "center"
+    },
+    input: {
+        paddingHorizontal: 16,
+        paddingVertical: 20,
+        flex: 1
+    },
+    eye: {
+        width: 24,
+        height: 24,
+        marginHorizontal: 16
     }
 })
