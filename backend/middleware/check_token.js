@@ -1,7 +1,8 @@
 const bcrypt = require("bcryptjs");
 const JWT = require("jsonwebtoken")
 
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({path: path.resolve(__dirname, "../.env")});
 
 function checkToken(req, res, next){
     try {
