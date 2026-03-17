@@ -12,7 +12,7 @@ type Props = {
     secure?: boolean;
 }
 
-export default function InputText ({ label, placeholder, value, secure } : Props ) {
+export default function InputText ({ label, placeholder, value, secure, onChangeText } : Props ) {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false)
 
     const showEye = !!secure
@@ -27,7 +27,7 @@ export default function InputText ({ label, placeholder, value, secure } : Props
         <View style={styles.container}>
             <Text style={styles.label}>{label}</Text>
             <View style={styles.inputContainer}>
-                <TextInput secureTextEntry={secureTextEntry} value={value} placeholder={placeholder} style={[styles.input, styles.placeholder]} />
+                <TextInput secureTextEntry={secureTextEntry} value={value} placeholder={placeholder} style={[styles.input, styles.placeholder]} onChangeText={onChangeText}/>
                 { showEye && EyeIcon && (
                     <Pressable onPress={() => setIsPasswordVisible((v) => !v)}>
                         <EyeIcon style={styles.eye} />
