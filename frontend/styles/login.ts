@@ -8,6 +8,11 @@ export const styles = StyleSheet.create({
         paddingHorizontal: 24,
         paddingTop: 18,
     },
+    buttonContainer: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginTop: 16
+    },
     mainText: {
         color: colors.text,
         fontSize: 24,

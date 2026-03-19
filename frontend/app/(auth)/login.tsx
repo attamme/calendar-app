@@ -5,6 +5,9 @@ import Button from "@/components/button";
 import { styles } from "@/styles/login";
 
 export default function Login() {
+
+    
+
     return (
        < KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
             <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>
@@ -13,8 +16,10 @@ export default function Login() {
                     <Text style={styles.subText}>Log in to your account</Text>
                     <InputText label="E-mail" placeholder="example@gmail.com"/>
                     <InputText label="Password" placeholder="***********" secure/>
-                    <Button title="Register"onPress={ () => alert("You are trying to register")}/>
-                    <Button title="Login" onPress={ () => alert("You are trying to login")}/>
+                    <View style={styles.buttonContainer}>
+                        <Button title="Register" onPress={ () => alert("You are trying to register")}/>
+                        <Button title="Login" onPress={ () => alert("You are trying to login")}/>
+                    </View>
                     <Text style={[styles.link, { textAlign: "right" }]}>Login as a guest</Text>
                     <Text style={[styles.link, { textDecorationLine: "underline" }]}>Terms of service</Text>
                     <Text style={[styles.link, { textDecorationLine: "underline" }]}>Privacy policy</Text>
