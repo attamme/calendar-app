@@ -48,4 +48,29 @@ async function Login(req, res) {
     }
 }
 
-module.exports = { GetAll, PostNew, Login };
+async function Add(req, res) {
+    try {
+        const friend = await knex("users").where("username", req.params.username).first();
+        
+        if (!friend) {res.status(401).send("user not found");} else {
+            await knex("friends").insert({"user_id": req.token.sub, "friend_id": friend.id})
+            res.send("added friend")
+        }
+    } catch (err) {
+        res.status(401).send("something failed")
+    }
+}
+
+async function ShowFriends(req, res) {
+    try {
+        const friends = await knex("friends").where("user_id", req.token.sub)
+        
+        if (!friends) {res.status(401).send("user not found");} else {
+            res.json(friends)
+        }
+    } catch (err) {
+        res.status(401).send("something failed")
+    }
+}
+
+module.exports = { GetAll, PostNew, Login, Add, ShowFriends };
