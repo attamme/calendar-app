@@ -5,62 +5,34 @@ const { width, height } = Dimensions.get("window");
 
 export const styles = StyleSheet.create({
   container: {
+    zIndex: 1,
     flex: 1,
-    backgroundColor: "#2E3244", // Dark background based on image
+    backgroundColor: "#404258", 
     paddingHorizontal: 28,
     paddingTop: 60,
     paddingBottom: 24,
     position: 'relative',
     overflow: 'hidden',
   },
-  backgroundCircle1: {
-    position: "absolute",
-    width: width * 0.8,
-    height: width * 0.8,
-    borderRadius: width * 0.4,
-    backgroundColor: colors.btn_yes, // Purple
-    top: -width * 0.2,
-    left: -width * 0.2,
-    opacity: 0.2,
-  },
-  backgroundCircle2: {
-    position: "absolute",
-    width: width * 0.9,
-    height: width * 0.9,
-    borderRadius: width * 0.45,
-    backgroundColor: colors.orange, // Orange
-    bottom: height * 0.3,
-    right: -width * 0.4,
-    opacity: 0.15,
-  },
-  backgroundCircle3: {
-    position: "absolute",
-    width: width * 0.7,
-    height: width * 0.7,
-    borderRadius: width * 0.35,
-    backgroundColor: "#0577A1", // Blueish
-    bottom: -width * 0.3,
-    left: -width * 0.3,
-    opacity: 0.2,
-  },
   logo: {
     width: 48,
     height: 48,
     marginBottom: 28,
+    top: -30,
+    left: -10,
   },
   title: {
-    fontFamily: "Inter",
     color: colors.white,
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "400",
     marginBottom: 8,
     lineHeight: 34,
   },
   subtitle: {
-    color: "#B0B3C7",
-    fontSize: 16,
+    color: "#ffffff",
+    fontSize: 20,
     marginBottom: 32,
-    fontWeight: "300",
+    fontWeight: "200",
   },
   heroContainer: {
     width: "100%",
@@ -69,8 +41,9 @@ export const styles = StyleSheet.create({
   },
   heroImage: {
     width: "100%",
+    opacity: 0.7,
     height: 180,
-    borderRadius: 12,
+    borderRadius: 7,
     resizeMode: "cover",
   },
   sectionTitle: {
@@ -101,15 +74,16 @@ export const styles = StyleSheet.create({
   },
   helpButton: {
     position: "absolute",
-    bottom: 30,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    bottom: -20,
+    right: -20,
+    width: 102,
+    height: 102,
+    borderRadius: 51,
+    transform: [{ rotate: "-45deg" }],
     backgroundColor: colors.btn_yes,
     justifyContent: "center",
     alignItems: "center",
-    elevation: 5,
+    elevation: 4,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -120,7 +94,8 @@ export const styles = StyleSheet.create({
   },
   helpButtonText: {
     color: colors.white,
-    fontSize: 24,
-    fontWeight: "bold",
-  },
+    fontSize: 42,
+    marginBottom: 10,
+    marginLeft: 5,
+  }
 });
