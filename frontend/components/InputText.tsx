@@ -10,6 +10,7 @@ type Props = {
     placeholder: string;
     value?: string;
     secure?: boolean;
+    onChangeText?: () => void;
 }
 
 export default function InputText ({ label, placeholder, value, secure, onChangeText } : Props ) {
