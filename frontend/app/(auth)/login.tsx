@@ -7,7 +7,29 @@ import { router } from "expo-router";
 
 export default function Login() {
 
-    
+    const [email, setEmail] = useState("")
+    const [password, setPassword] = useState("")
+
+    async function handleLogin() {
+        try {
+            const res = await fetch("http://localhost:3000/users/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            })
+            
+            const data = await res.json()
+
+            console.log("Login successful:", data);
+        } catch (error) {
+            console.error("Login failed:", error);
+        }
+    }
 
     return (
        < KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
@@ -15,8 +37,8 @@ export default function Login() {
                 <View style={styles.container}>
                     <Text style={styles.mainText}>Good day, sire.</Text>
                     <Text style={styles.subText}>Log in to your account</Text>
-                    <InputText label="E-mail" placeholder="example@gmail.com"/>
-                    <InputText label="Password" placeholder="***********" secure/>
+                    <InputText label="E-mail" placeholder="example@gmail.com" value={email} onChangeText={setEmail} />
+                    <InputText label="Password" placeholder="***********" secure value={password} onChangeText={setPassword} />
                     <View style={styles.buttonContainer}>
                         <Button title="Register" onPress={ () => router.navigate("/register")}/>
                         <Button title="Login" onPress={ () => alert("You are trying to login")}/>
