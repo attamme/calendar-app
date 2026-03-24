@@ -14,6 +14,7 @@ export default function Index() {
           <InputText label="Text" placeholder="Text"/>
           <InputText label="Password" placeholder="**********" secure />
           <Button title="Login" onPress={ () => router.navigate("/(auth)/login")}/>
+          <Button title="Register" onPress={ () => router.navigate("/(auth)/register")} />
         </View>
       </Pressable>
     </KeyboardAvoidingView>
