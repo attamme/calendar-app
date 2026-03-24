@@ -3,6 +3,7 @@ import { View, Text, Keyboard, KeyboardAvoidingView, Pressable, Platform } from 
 import InputText from "@/components/InputText";
 import Button from "@/components/button";
 import { styles } from "@/styles/login";
+import { router } from "expo-router";
 
 export default function Login() {
 
@@ -17,7 +18,7 @@ export default function Login() {
                     <InputText label="E-mail" placeholder="example@gmail.com"/>
                     <InputText label="Password" placeholder="***********" secure/>
                     <View style={styles.buttonContainer}>
-                        <Button title="Register" onPress={ () => alert("You are trying to register")}/>
+                        <Button title="Register" onPress={ () => router.navigate("/register")}/>
                         <Button title="Login" onPress={ () => alert("You are trying to login")}/>
                     </View>
                     <Text style={[styles.link, { textAlign: "right" }]}>Login as a guest</Text>
