@@ -16,7 +16,7 @@ async function getAll(req, res){
 
 async function getFriends(req, res){
     try{
-        const cals = await knex("calendars").select("*");
+        const cals = await knex("calendar_users").select("*");
         res.json(cals);
     }catch(err){
         console.log(err);
@@ -30,11 +30,10 @@ async function showMyCalendars(req, res){
         const cal_users = await knex("calendar_users").where("user_id", user.id);
         
 
-        const calendars = {}
-        cal_users.forEach(async (x, i) => {
-            const cal = await knex("calendars").where("id", x.calendar_id)
-            calendars.push(cal);
-        });
+        const calendars = await Promise.all( cal_users.map(async (x, i) => {
+            console.log(i)
+            return await knex("calendars").where("id", x.calendar_id).first();
+        }));
 
 
         res.json(calendars)
@@ -44,16 +43,11 @@ async function showMyCalendars(req, res){
     }
 }
 
-async function addFriend(req, res, extra){
+async function addFriend(req, res){
     try{
-        
-        if (extra){
-            await knex("calendar_users").insert({adder_id: extra.id, user_id: extra.id, calendar_id: extra.calendar_id})
-        } else {
             const adder = await knex("users").where("id", req.token.sub).first();
             const user = await knex("users").where("username", req.body.username).first();
             await knex("calendar_users").insert({adder_id: adder.id, user_id: user.id, calendar_id: req.body.calendar_id});
-        }
         res.send("successful! added friend to calendar");
     }catch(err){
         
@@ -66,15 +60,15 @@ async function addFriend(req, res, extra){
 async function create(req, res){
     try{
         const owner = await knex("users").where("id", req.token.sub).first();
-        const created = await knex("calendars").insert({title: req.body.title, owner_id: owner.id, color: req.body.color});
-        addFriend({extra: {id: owner.id, calendar_id: created.id}})
+        const [created] = await knex("calendars").insert({title: req.body.title, owner_id: owner.id, color: req.body.color});
+        await knex("calendar_users").insert({adder_id: owner.id, user_id: owner.id, calendar_id: created});
         res.send("successful! calendar added");
     }catch(err){
         
         console.log(err);
 
         res.status(401).send("something went wrong creating a new calendar");
-    } 
+    }
 }
 
 module.exports = {getAll, addFriend, create, getFriends, showMyCalendars} 
