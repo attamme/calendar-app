@@ -2,6 +2,7 @@ import { Text, View, Keyboard, KeyboardAvoidingView, Platform, Pressable } from 
 import { useRouter } from "expo-router";
 import Button from "@/components/button";
 import InputText from "@/components/InputText";
+import MiniCalendar from "@/components/MiniCalendar";
 
 export default function Index() {
   const router = useRouter()
@@ -15,6 +16,7 @@ export default function Index() {
           <InputText label="Password" placeholder="**********" secure />
           <Button title="Login" onPress={ () => router.navigate("/(auth)/login")}/>
           <Button title="Register" onPress={ () => router.navigate("/(auth)/register")} />
+          <MiniCalendar label="Name" />
         </View>
       </Pressable>
     </KeyboardAvoidingView>
