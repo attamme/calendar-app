@@ -9,6 +9,7 @@ exports.seed = async function(knex) {
     username: o.username,
     password: o.password,
     isAdmin: o.isAdmin,
+    email: o.email
     }
   }
 
@@ -17,7 +18,8 @@ exports.seed = async function(knex) {
       id: 1,
       username: "test",
       password: "passwd",
-      isAdmin: false
+      isAdmin: false,
+      email: "pedophile@gmail.com"
     })]
 
   await knex('users').del()
