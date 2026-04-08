@@ -16,7 +16,10 @@ export default function Index() {
           <InputText label="Password" placeholder="**********" secure />
           <Button title="Login" onPress={ () => router.navigate("/(auth)/login")}/>
           <Button title="Register" onPress={ () => router.navigate("/(auth)/register")} />
-          <MiniCalendar label="Name" />
+          <View style={{ marginTop: 16, gap: 12 }}>
+            <MiniCalendar label="Work" />
+            <MiniCalendar label="School" strokeColor="#3D49FF" />
+          </View>
         </View>
       </Pressable>
     </KeyboardAvoidingView>

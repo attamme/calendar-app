@@ -8,7 +8,7 @@ export const styles = StyleSheet.create({
         backgroundColor: colors.fourth,
         top: 29,
         borderRadius: 14,
-        position: "absolute"
+        position: "absolute",
     },
     view: {
         top: 69,
@@ -16,11 +16,16 @@ export const styles = StyleSheet.create({
         width: 35,
         backgroundColor: colors.fourth,
         borderRadius: 14,
-        position: "absolute"
+        position: "absolute",
     },
     calendar: {
-        width: "100%",
-        height: 116
+        width: 98,
+        height: 116,
+        position: "relative",
+    },
+    calendarPressed: {
+        opacity: 0.9,
+        transform: [{ scale: 0.98 }],
     },
     calendarChild: {
         top: 18,
@@ -32,19 +37,19 @@ export const styles = StyleSheet.create({
         height: 98,
         borderRadius: 14,
         left: 0,
-        position: "absolute"
+        position: "absolute",
     },
     calendarItem: {
-        left: 10
+        left: 10,
     },
     calendarInner: {
-        left: 52
+        left: 52,
     },
     rectangleView: {
-        left: 10
+        left: 10,
     },
     calendarChild2: {
-        left: 52
+        left: 52,
     },
     name: {
         top: 0,
@@ -52,9 +57,9 @@ export const styles = StyleSheet.create({
         fontFamily: "Inter-Regular",
         color: colors.text,
         textAlign: "center",
-        width: 97,
+        width: 98,
         height: 20,
         left: 0,
-        position: "absolute"
-    }
-})
+        position: "absolute",
+    },
+});
