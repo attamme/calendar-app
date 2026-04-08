@@ -1,17 +1,5 @@
-import { useRouter } from "expo-router";
-import { SafeAreaView, ScrollView, Text, View } from "react-native";
-import Button from "@/components/button";
-import { styles } from "../styles/home";
+import { Redirect } from "expo-router";
 
 export default function Home() {
-  const router = useRouter();
-
-  return (
-    <ScrollView contentContainerStyle={styles.scrollView}>
-      <View style={styles.container}>
-          <Text style={styles.title}>Welcome to the Calendar App!</Text>
-
-      </View>
-    </ScrollView>
-  );
+  return <Redirect href="/(app)/dashboard" />;
 }

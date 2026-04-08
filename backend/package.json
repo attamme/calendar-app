@@ -1,4 +1,10 @@
 {
+  "scripts": {
+    "start": "node index.js",
+    "migrate": "npx knex --knexfile db/knexfile.js migrate:latest",
+    "rollback": "npx knex --knexfile db/knexfile.js migrate:rollback",
+    "seed": "npx knex --knexfile db/knexfile.js seed:run"
+  },
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.6.2",

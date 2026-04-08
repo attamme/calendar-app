@@ -1,0 +1,14 @@
+Starting project at C:\Users\Artur\Documents\expo-project\frontend
+React Compiler enabled
+Starting Metro Bundler
+warning: Bundler cache is empty, rebuilding (this may take a minute)
+Tunnel connected.
+Tunnel connected.
+Tunnel ready.
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+Android node_modules\expo-router\entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Android node_modules\expo-router\entry.js ▓▓░░░░░░░░░░░░░░ 14.7% ( 54/141)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓░░░░░░░░ 50.9% (453/635)
+Android node_modules\expo-router\entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 96.3% (1134/1171)
+Android Bundled 11863ms node_modules\expo-router\entry.js (1293 modules)

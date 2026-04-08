@@ -1,17 +1,51 @@
-const express = require("express")
+const path = require("path");
+const express = require("express");
 const cookieParser = require("cookie-parser");
-const app = express()
-const router = app.router
-const port = 3000
-app.use(express.json())
-app.use(cookieParser())
 
-const userRouter = require("../backend/routers/users.router")
-const calRouter = require("../backend/routers/calendars.router")
+require("dotenv").config({ path: path.resolve(__dirname, ".env") });
 
-router.use("/users", userRouter)
-router.use("/calendars", calRouter)
+const userRouter = require("./routers/users.router");
+const calendarRouter = require("./routers/calendars.router");
+const itemRouter = require("./routers/items.router");
 
-app.listen(port, (req, res) => {
-    console.log("app listening on port: "+port)
-})
+const app = express();
+const port = Number(process.env.PORT || 3000);
+
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
+
+app.use(express.json());
+app.use(cookieParser());
+
+app.get("/health", (req, res) => {
+  res.json({
+    status: "ok",
+    service: "adhd-calendar-api",
+    now: new Date().toISOString(),
+  });
+});
+
+app.use("/users", userRouter);
+app.use("/calendars", calendarRouter);
+app.use("/items", itemRouter);
+
+app.use((req, res) => {
+  res.status(404).json({
+    message: "Route not found",
+  });
+});
+
+app.listen(port, () => {
+  console.log(`ADHD Calendar API listening on port ${port}`);
+});
+
+module.exports = app;

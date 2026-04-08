@@ -1,14 +1,17 @@
-const express = require("express")
-const app = express()
-const router = app.router
-const userController = require("../controllers/users.controller")
-const checkToken = require("../middleware/check_token").checkToken
+const express = require("express");
 
-    router.get("/", checkToken, userController.GetAll)
-    router.post("/create", userController.Register)
-    router.post("/login", userController.Login)
-    router.get("/add/:username", checkToken, userController.Add)
-    router.get("/friends", checkToken, userController.ShowFriends)
+const userController = require("../controllers/users.controller");
+const { checkToken } = require("../middleware/check_token");
+
+const router = express.Router();
+
+router.post("/register", userController.register);
+router.post("/create", userController.register);
+router.post("/login", userController.login);
+router.get("/me", checkToken, userController.me);
+router.get("/", checkToken, userController.getAll);
+router.get("/friends", checkToken, userController.listFriends);
+router.post("/friends", checkToken, userController.addFriend);
+router.get("/add/:username", checkToken, userController.addFriendFromParams);
 
 module.exports = router;
-

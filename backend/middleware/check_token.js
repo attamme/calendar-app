@@ -1,28 +1,35 @@
-const bcrypt = require("bcryptjs");
-const JWT = require("jsonwebtoken")
+const JWT = require("jsonwebtoken");
 
-const path = require("path");
-require("dotenv").config({path: path.resolve(__dirname, "../.env")});
+function checkToken(req, res, next) {
+  try {
+    const header = req.headers.authorization;
 
-function checkToken(req, res, next){
-    try {
-        const header = req.headers.authorization;
-        if (!header){
-            return res.status(401).send("No token provided");
-        }
-
-        const parts = header.split(" ");
-        if (parts.length !== 2 || parts[0] !== "Bearer") {
-            return res.status(401).send("Malformed token");
-        }
-        
-        const token = header.split(" ")[1];
-        const decoded = JWT.verify(token, process.env.JWT_SECRET)
-        req.token = decoded
-        next()
-    } catch (err) {
-        res.send(err)
+    if (!header) {
+      return res.status(401).json({
+        message: "No token provided",
+      });
     }
+
+    const [scheme, token] = header.split(" ");
+
+    if (scheme !== "Bearer" || !token) {
+      return res.status(401).json({
+        message: "Malformed token",
+      });
+    }
+
+    const decoded = JWT.verify(token, process.env.JWT_SECRET);
+
+    req.auth = {
+      userId: Number(decoded.sub),
+    };
+
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      message: "Invalid or expired token",
+    });
+  }
 }
 
-module.exports = {checkToken}
+module.exports = { checkToken };

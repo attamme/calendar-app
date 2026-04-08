@@ -1,13 +1,15 @@
 import * as SecureStore from "expo-secure-store";
 
+const TOKEN_KEY = "adhd-calendar-token";
+
 export async function saveToken(token: string) {
-  await SecureStore.setItemAsync("token", token);
+  await SecureStore.setItemAsync(TOKEN_KEY, token);
 }
 
 export async function getToken() {
-  return await SecureStore.getItemAsync("token");
+  return await SecureStore.getItemAsync(TOKEN_KEY);
 }
 
 export async function deleteToken() {
-  await SecureStore.deleteItemAsync("token");
+  await SecureStore.deleteItemAsync(TOKEN_KEY);
 }

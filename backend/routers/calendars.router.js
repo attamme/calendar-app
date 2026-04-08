@@ -1,13 +1,15 @@
-const express = require("express")
-const app = express()
-const router = app.router
-const calController = require("../controllers/calendars.controller")
-const checkToken = require("../middleware/check_token").checkToken
+const express = require("express");
 
-    router.get("/", checkToken, calController.getAll)
-    router.post("/create", checkToken, calController.create)
-    router.post("/add-friend", checkToken, calController.addFriend)
-    router.get("/friends", calController.getFriends)
+const calendarController = require("../controllers/calendars.controller");
+const { checkToken } = require("../middleware/check_token");
+
+const router = express.Router();
+
+router.get("/", checkToken, calendarController.listCalendars);
+router.post("/", checkToken, calendarController.createCalendar);
+router.post("/create", checkToken, calendarController.createCalendar);
+router.patch("/:id", checkToken, calendarController.updateCalendar);
+router.post("/:id/share", checkToken, calendarController.shareCalendar);
+router.post("/add-friend", checkToken, calendarController.shareCalendarLegacy);
 
 module.exports = router;
-

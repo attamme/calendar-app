@@ -1,76 +1,210 @@
-const knex = require("knex")(require("../db/knexfile").development);
 const bcrypt = require("bcryptjs");
-const JWT = require("jsonwebtoken")
+const JWT = require("jsonwebtoken");
 
-require("dotenv").config();
+const knex = require("../utils/db");
+const { areFriends } = require("../utils/access");
+const { sendError, sendSuccess } = require("../utils/http");
+const { sanitizeText } = require("../utils/planner");
 
-async function GetAll(req, res) {
+function createToken(userId) {
+  return JWT.sign({ sub: userId }, process.env.JWT_SECRET, {
+    expiresIn: "30d",
+  });
+}
+
+async function getSafeUserById(userId) {
+  return knex("users")
+    .select("id", "username", "email", "isAdmin")
+    .where({ id: userId })
+    .first();
+}
+
+async function getAll(req, res) {
   try {
-    const users = await knex("users").select("*");
-    res.json(users);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      message: err.message,
-      code: err.code,
-    });
+    const users = await knex("users").select("id", "username", "email", "isAdmin");
+    return sendSuccess(res, 200, users);
+  } catch (error) {
+    return sendError(res, 500, "Failed to load users");
   }
 }
 
-async function Register(req, res) {
-    try {
-        const hashed = await bcrypt.hash(req.body.password, 10)
-        knex("users").insert({username: req.body.username, password: hashed, email: req.body.email})
-        .then(res.send("Successfully created a user!"))
-        .catch((err) => console.error(err))
-    } catch (err) {
-        res.send(err)
+async function register(req, res) {
+  try {
+    const username = sanitizeText(req.body.username);
+    const email = sanitizeText(req.body.email).toLowerCase();
+    const password = sanitizeText(req.body.password);
+
+    if (!username || !email || password.length < 6) {
+      return sendError(res, 400, "Username, email, and a 6+ character password are required");
     }
+
+    const existing = await knex("users")
+      .whereRaw("lower(email) = ?", [email])
+      .orWhereRaw("lower(username) = ?", [username.toLowerCase()])
+      .first();
+
+    if (existing) {
+      return sendError(res, 409, "A user with that email or username already exists");
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const [userId] = await knex("users").insert({
+      username,
+      email,
+      password: hashedPassword,
+    });
+
+    const user = await getSafeUserById(userId);
+    const token = createToken(user.id);
+
+    return sendSuccess(res, 201, { token, user });
+  } catch (error) {
+    return sendError(res, 500, "Registration failed");
+  }
 }
 
-async function Login(req, res) {
-    try {
-        const user = await knex("users").select("password", "id", "username", "email").where("email", req.body.email).first();
-        
-        if (!user) {res.status(401).send("wrong email or password");} else {
-            const check = await bcrypt.compare(req.body.password, user.password);
-            if (check) {
-            const user_token = JWT.sign({sub: user.id}, process.env.JWT_SECRET, { expiresIn: "1h" })
-            res.json(user_token)
-             } else {
-            res.status(401).send("wrong email or password");
-        }
-        }
+async function login(req, res) {
+  try {
+    const email = sanitizeText(req.body.email).toLowerCase();
+    const password = sanitizeText(req.body.password);
 
-        
-    } catch (err) {
-        res.send(err)
+    if (!email || !password) {
+      return sendError(res, 400, "Email and password are required");
     }
+
+    const user = await knex("users")
+      .select("id", "username", "email", "password", "isAdmin")
+      .whereRaw("lower(email) = ?", [email])
+      .first();
+
+    if (!user) {
+      return sendError(res, 401, "Wrong email or password");
+    }
+
+    const passwordMatches = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatches) {
+      return sendError(res, 401, "Wrong email or password");
+    }
+
+    const token = createToken(user.id);
+
+    return sendSuccess(res, 200, {
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      },
+    });
+  } catch (error) {
+    return sendError(res, 500, "Login failed");
+  }
 }
 
-async function Add(req, res) {
-    try {
-        const friend = await knex("users").where("username", req.params.username).first();
-        
-        if (!friend) {res.status(401).send("user not found");} else {
-            await knex("friends").insert({"user_id": req.token.sub, "friend_id": friend.id})
-            res.send("added friend")
-        }
-    } catch (err) {
-        res.status(401).send("something failed")
+async function me(req, res) {
+  try {
+    const user = await getSafeUserById(req.auth.userId);
+
+    if (!user) {
+      return sendError(res, 404, "User not found");
     }
+
+    return sendSuccess(res, 200, { user });
+  } catch (error) {
+    return sendError(res, 500, "Failed to load current user");
+  }
 }
 
-async function ShowFriends(req, res) {
-    try {
-        const friends = await knex("friends").where("user_id", req.token.sub)
-        
-        if (!friends) {res.status(401).send("user not found");} else {
-            res.json(friends)
-        }
-    } catch (err) {
-        res.status(401).send("something failed")
-    }
+async function listFriends(req, res) {
+  try {
+    const friends = await knex("friends as friendships")
+      .join("users as friends", "friendships.friend_id", "friends.id")
+      .where("friendships.user_id", req.auth.userId)
+      .select(
+        "friends.id",
+        "friends.username",
+        "friends.email",
+        "friendships.created_at as connected_at"
+      )
+      .orderBy("friends.username", "asc");
+
+    return sendSuccess(res, 200, { friends });
+  } catch (error) {
+    return sendError(res, 500, "Failed to load friends");
+  }
 }
 
-module.exports = { GetAll, Register, Login, Add, ShowFriends };
+async function addFriendInternal(req, res, lookupValue) {
+  try {
+    const target = sanitizeText(lookupValue);
+
+    if (!target) {
+      return sendError(res, 400, "Friend username or email is required");
+    }
+
+    const friend = await knex("users")
+      .whereRaw("lower(username) = ?", [target.toLowerCase()])
+      .orWhereRaw("lower(email) = ?", [target.toLowerCase()])
+      .first();
+
+    if (!friend) {
+      return sendError(res, 404, "Friend not found");
+    }
+
+    if (friend.id === req.auth.userId) {
+      return sendError(res, 400, "You cannot add yourself as a friend");
+    }
+
+    const alreadyFriends = await areFriends(req.auth.userId, friend.id);
+
+    if (!alreadyFriends) {
+      await knex.transaction(async (trx) => {
+        await trx("friends")
+          .insert({
+            user_id: req.auth.userId,
+            friend_id: friend.id,
+          })
+          .onConflict(["user_id", "friend_id"])
+          .ignore();
+
+        await trx("friends")
+          .insert({
+            user_id: friend.id,
+            friend_id: req.auth.userId,
+          })
+          .onConflict(["user_id", "friend_id"])
+          .ignore();
+      });
+    }
+
+    return sendSuccess(res, 201, {
+      friend: {
+        id: friend.id,
+        username: friend.username,
+        email: friend.email,
+      },
+    });
+  } catch (error) {
+    return sendError(res, 500, "Failed to add friend");
+  }
+}
+
+async function addFriend(req, res) {
+  return addFriendInternal(req, res, req.body.username || req.body.email);
+}
+
+async function addFriendFromParams(req, res) {
+  return addFriendInternal(req, res, req.params.username);
+}
+
+module.exports = {
+  getAll,
+  register,
+  login,
+  me,
+  listFriends,
+  addFriend,
+  addFriendFromParams,
+};

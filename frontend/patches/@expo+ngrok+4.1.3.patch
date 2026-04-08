@@ -1,0 +1,84 @@
+diff --git a/node_modules/@expo/ngrok/index.js b/node_modules/@expo/ngrok/index.js
+index c9e5f8d..55c5b79 100644
+--- a/node_modules/@expo/ngrok/index.js
++++ b/node_modules/@expo/ngrok/index.js
+@@ -12,6 +12,24 @@ const { defaults, validate, isRetriable } = require("./src/utils");
+ let processUrl = null;
+ let ngrokClient = null;
+ 
++function sanitizeTunnelOptions(opts) {
++  const {
++    authtoken,
++    configPath,
++    onLogEvent,
++    onStatusChange,
++    port,
++    region,
++    ...requestOpts
++  } = opts;
++
++  if (requestOpts.addr !== undefined) {
++    requestOpts.addr = String(requestOpts.addr);
++  }
++
++  return requestOpts;
++}
++
+ async function connect(opts) {
+   opts = defaults(opts);
+   validate(opts);
+@@ -27,7 +45,7 @@ async function connect(opts) {
+ async function connectRetry(opts, retryCount = 0) {
+   opts.name = String(opts.name || uuid.v4());
+   try {
+-    const response = await ngrokClient.startTunnel(opts);
++    const response = await ngrokClient.startTunnel(sanitizeTunnelOptions(opts));
+     return response.public_url;
+   } catch (err) {
+     if (!isRetriable(err) || retryCount >= 100) {
+diff --git a/node_modules/@expo/ngrok/src/process.js b/node_modules/@expo/ngrok/src/process.js
+index 0ab7407..92efd00 100644
+--- a/node_modules/@expo/ngrok/src/process.js
++++ b/node_modules/@expo/ngrok/src/process.js
+@@ -1,7 +1,31 @@
++const fs = require("fs");
++const path = require("path");
+ const { promisify } = require("util");
+ const { spawn, exec: execCallback } = require("child_process");
+ const exec = promisify(execCallback);
+-const bin = require("@expo/ngrok-bin");
++const bundledBin = require("@expo/ngrok-bin");
++
++function resolveBin() {
++  if (process.env.EXPO_NGROK_BIN && fs.existsSync(process.env.EXPO_NGROK_BIN)) {
++    return process.env.EXPO_NGROK_BIN;
++  }
++
++  try {
++    const ngrokEntryPoint = require.resolve("ngrok");
++    const executable = process.platform === "win32" ? "ngrok.exe" : "ngrok";
++    const modernBin = path.join(path.dirname(ngrokEntryPoint), "bin", executable);
++
++    if (fs.existsSync(modernBin)) {
++      return modernBin;
++    }
++  } catch (error) {
++    // Fall back to Expo's bundled binary when the modern package is unavailable.
++  }
++
++  return bundledBin;
++}
++
++const bin = resolveBin();
+ 
+ const ready = /starting web service.*addr=(\d+\.\d+\.\d+\.\d+:\d+)/;
+ const inUse = /address already in use/;
+@@ -153,7 +177,7 @@ async function setAuthtoken(optsOrToken) {
+  * @param {Ngrok.Options | undefined} opts
+  */
+ async function getVersion(opts = {}) {
+-  const { stdout } = await exec(`${bin} --version`);
++  const { stdout } = await exec(`"${bin}" --version`);
+   return stdout.replace("ngrok version", "").trim();
+ }
+ 
