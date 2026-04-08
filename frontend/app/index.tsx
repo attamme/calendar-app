@@ -1,9 +1,10 @@
-import { Text, View, Keyboard, KeyboardAvoidingView, Platform, Pressable } from "react-native";
+import { Text, View, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Button from "@/components/button";
 import InputText from "@/components/InputText";
 import MiniCalendar from "@/components/MiniCalendar";
+import TaskView from "@/components/TaskView";
 
 export default function Index() {
   const router = useRouter()
@@ -11,12 +12,23 @@ export default function Index() {
 
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <Pressable style={{ flex: 1 }} onPress={Keyboard.dismiss}>
-        <View>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 16, paddingBottom: 36 }}
+        >
           <Text>Edit app/index.tsx to edit this screen.</Text>
           <InputText label="Text" placeholder="Text"/>
           <InputText label="Password" placeholder="**********" secure />
           <Button title="Login" onPress={ () => router.navigate("/(auth)/login")}/>
           <Button title="Register" onPress={ () => router.navigate("/(auth)/register")} />
+          <View style={{ marginTop: 20 }}>
+            <TaskView
+              title="Today"
+              description="The task description is written here. Just write anything here. You can tap this to extend it. I repeat: the task description is written here."
+              priority={5}
+            />
+          </View>
           <View style={{ marginTop: 16, gap: 12 }}>
             <MiniCalendar
               label="Work"
@@ -38,7 +50,7 @@ export default function Index() {
               ]}
             />
           </View>
-        </View>
+        </ScrollView>
       </Pressable>
     </KeyboardAvoidingView>
   );
