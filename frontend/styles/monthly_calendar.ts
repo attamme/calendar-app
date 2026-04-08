@@ -1,0 +1,111 @@
+import { StyleSheet } from "react-native";
+import { colors } from "./colors";
+
+export const styles = StyleSheet.create({
+    calendar: {
+        width: "100%",
+        backgroundColor: colors.primary,
+        padding: 10,
+        gap: 10,
+    },
+    monthLabel: {
+        color: colors.text,
+        fontSize: 20,
+        lineHeight: 24,
+        fontFamily: "Inter-Regular",
+        alignSelf: "flex-start",
+    },
+    weekdaysRow: {
+        flexDirection: "row",
+        gap: 10,
+        width: "100%",
+        backgroundColor: colors.second,
+        padding: 10,
+        alignItems: "stretch",
+    },
+    weekdayCell: {
+        flex: 1,
+        minWidth: 0,
+        backgroundColor: colors.third,
+        borderRadius: 3,
+        minHeight: 37,
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+    },
+    weekdayText: {
+        color: colors.subtext,
+        fontSize: 16,
+        lineHeight: 24,
+        fontFamily: "Inter-Regular",
+        textAlign: "center",
+    },
+    weekendText: {
+        color: "#ff0000",
+    },
+    weekRow: {
+        flexDirection: "row",
+        gap: 10,
+        width: "100%",
+        backgroundColor: colors.second,
+        padding: 10,
+        alignItems: "flex-start",
+        position: "relative",
+    },
+    dayCell: {
+        backgroundColor: colors.third,
+        borderRadius: 3,
+        borderWidth: 0,
+        borderColor: "transparent",
+        paddingHorizontal: 0,
+        paddingTop: 0,
+        paddingBottom: 0,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    emptyDayCell: {
+        backgroundColor: "transparent",
+        borderRadius: 3,
+    },
+    firstDayCell: {
+        borderWidth: 1,
+        borderColor: colors.text,
+    },
+    selectedDayCell: {
+        borderWidth: 2,
+        borderColor: "#6A5AFC",
+    },
+    dayCellPressed: {
+        opacity: 0.9,
+    },
+    dayText: {
+        color: colors.subtext,
+        fontSize: 20,
+        lineHeight: 24,
+        fontFamily: "Inter-Regular",
+        textAlign: "center",
+    },
+    eventLayer: {
+        position: "absolute",
+        left: 10,
+        right: 10,
+        top: 0,
+        bottom: 0,
+        justifyContent: "center",
+        zIndex: 5,
+    },
+    eventBar: {
+        position: "absolute",
+        height: 19,
+        borderRadius: 999,
+        justifyContent: "center",
+        paddingHorizontal: 10,
+        zIndex: 6,
+    },
+    eventLabel: {
+        fontSize: 12,
+        lineHeight: 14,
+        fontFamily: "Inter-Regular",
+    },
+});
