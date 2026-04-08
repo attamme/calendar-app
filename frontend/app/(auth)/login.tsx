@@ -3,9 +3,10 @@ import { View, Text, Keyboard, KeyboardAvoidingView, Pressable, Platform } from 
 import InputText from "@/components/InputText";
 import Button from "@/components/button";
 import { styles } from "@/styles/login";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import login from "@/services/authLogin";
 export default function Login() {
+    const router = useRouter()
 
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
@@ -13,7 +14,7 @@ export default function Login() {
     function handleLogin() {
         console.log("Logging in with", email, password)
         login(email, password).then(() => {
-            router.navigate("/home")
+            router.replace("/home")
         }).catch((err) => {
             console.error(err)
         })
@@ -30,7 +31,7 @@ export default function Login() {
                     <InputText label="E-mail" placeholder="example@gmail.com" value={email} onChangeText={setEmail} />
                     <InputText label="Password" placeholder="***********" secure value={password} onChangeText={setPassword} />
                     <View style={styles.buttonContainer}>
-                        <Button title="Register" onPress={ () => router.navigate("/register")}/>
+                        <Button title="Register" onPress={ () => router.push("/register")}/>
                         <Button title="Login" onPress={ () => handleLogin()}/>
                     </View>
                     <Text style={[styles.link, { textAlign: "right" }]}>Login as a guest</Text>

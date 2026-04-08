@@ -13,8 +13,8 @@ export default function Index() {
           <Text>Edit app/index.tsx to edit this screen.</Text>
           <InputText label="Text" placeholder="Text"/>
           <InputText label="Password" placeholder="**********" secure />
-          <Button title="Login" onPress={ () => router.navigate("/(auth)/login")}/>
-          <Button title="Register" onPress={ () => router.navigate("/(auth)/register")} />
+          <Button title="Login" onPress={ () => router.push("/login")}/>
+          <Button title="Register" onPress={ () => router.push("/register")} />
         </View>
       </Pressable>
     </KeyboardAvoidingView>
