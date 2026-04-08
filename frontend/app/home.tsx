@@ -7,13 +7,11 @@ export default function Home() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.scrollView}>
-        <View style={styles.container}>
-            <Text style={styles.title}>Welcome to the Calendar App!</Text>
+    <ScrollView contentContainerStyle={styles.scrollView}>
+      <View style={styles.container}>
+          <Text style={styles.title}>Welcome to the Calendar App!</Text>
 
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+    </ScrollView>
   );
 }

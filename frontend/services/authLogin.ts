@@ -2,7 +2,6 @@ import { saveToken } from "@/services/authStorage";
 import {API_URL} from "@/app/config.json";
 
 export default async function login(email: string, password: string) {
-  console.log(API_URL + "/users/login")
   const res = await fetch(`${API_URL}/users/login`, {
     method: "POST",
     headers: {
@@ -12,7 +11,6 @@ export default async function login(email: string, password: string) {
     },
     body: JSON.stringify({ email, password }),
   });
-  console.log(res);
   if (!res.ok) {
     throw new Error("Login failed");
   }
