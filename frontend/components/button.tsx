@@ -43,7 +43,14 @@ export default function Button({
       {loading ? (
         <ActivityIndicator color={palette.textColor} />
       ) : (
-        <Text style={[styles.text, { color: palette.textColor }, textStyle]}>{title}</Text>
+        <Text
+          adjustsFontSizeToFit
+          minimumFontScale={0.85}
+          numberOfLines={1}
+          style={[styles.text, { color: palette.textColor }, textStyle]}
+        >
+          {title}
+        </Text>
       )}
     </Pressable>
   );
@@ -52,18 +59,18 @@ export default function Button({
 const palettes = {
   primary: {
     backgroundColor: theme.colors.accent,
-    borderColor: theme.colors.accent,
-    textColor: theme.colors.surface,
+    borderColor: theme.colors.accentHigh,
+    textColor: theme.colors.appTextInverse,
   },
   secondary: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: theme.colors.surfaceWarm,
     borderColor: theme.colors.borderStrong,
-    textColor: theme.colors.textPrimary,
+    textColor: theme.colors.appTextInverse,
   },
   ghost: {
-    backgroundColor: theme.colors.surfaceMuted,
-    borderColor: theme.colors.surfaceMuted,
-    textColor: theme.colors.textPrimary,
+    backgroundColor: theme.colors.backgroundStrong,
+    borderColor: theme.colors.border,
+    textColor: theme.colors.appTextInverse,
   },
 } as const;
 
@@ -75,6 +82,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#171A28",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.14,
+    shadowRadius: 14,
+    elevation: 2,
   },
   text: {
     fontSize: 16,

@@ -12,17 +12,25 @@ type PlannerCardProps = {
 
 export default function PlannerCard({ item, onPress }: PlannerCardProps) {
   const priorityTone = priorityPalettes[item.priority];
+  const metaIconColor = item.is_direct_share ? theme.colors.textPrimary : theme.colors.textMuted;
 
   return (
-    <Pressable onPress={onPress} style={styles.card}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed ? styles.pressed : null]}>
       <View style={styles.headerRow}>
         <View style={styles.titleGroup}>
-          <View style={[styles.priorityDot, { backgroundColor: priorityTone }]} />
-          <Text numberOfLines={1} style={styles.title}>
-            {item.title}
-          </Text>
+          <View style={[styles.priorityStripe, { backgroundColor: priorityTone }]} />
+          <View style={styles.titleCopy}>
+            <Text numberOfLines={1} style={styles.title}>
+              {item.title}
+            </Text>
+            <Text numberOfLines={1} style={styles.inlineMeta}>
+              {item.calendar_title || (item.is_direct_share ? "Choose calendar" : "No calendar")}
+            </Text>
+          </View>
         </View>
-        <Text style={styles.typeLabel}>{item.type.toUpperCase()}</Text>
+        <View style={styles.typeBadge}>
+          <Text style={styles.typeLabel}>{item.type.toUpperCase()}</Text>
+        </View>
       </View>
 
       <Text numberOfLines={2} style={styles.notes}>
@@ -31,20 +39,20 @@ export default function PlannerCard({ item, onPress }: PlannerCardProps) {
 
       <View style={styles.metaRow}>
         <View style={styles.metaPill}>
-          <MaterialCommunityIcons color={theme.colors.textSecondary} name="calendar-clock-outline" size={16} />
+          <MaterialCommunityIcons color={metaIconColor} name="calendar-clock-outline" size={16} />
           <Text style={styles.metaText}>
             {formatRelativeDate(item.due_at || item.start_at)}
           </Text>
         </View>
         <View style={styles.metaPill}>
-          <MaterialCommunityIcons color={theme.colors.textSecondary} name="lightning-bolt-outline" size={16} />
+          <MaterialCommunityIcons color={metaIconColor} name="lightning-bolt-outline" size={16} />
           <Text style={styles.metaText}>{item.effort}</Text>
         </View>
       </View>
 
       <View style={styles.footerRow}>
         <Text style={styles.footerText}>
-          {item.calendar_title || "No calendar"} · {formatDayLabel(item.due_at || item.start_at)}
+          {formatDayLabel(item.due_at || item.start_at)}
         </Text>
         {item.shares.length ? (
           <Text style={styles.shareText}>{item.shares.length} shared</Text>
@@ -64,11 +72,20 @@ const priorityPalettes = {
 const styles = StyleSheet.create({
   card: {
     padding: 18,
-    borderRadius: 22,
-    backgroundColor: theme.colors.surface,
+    borderRadius: 24,
+    backgroundColor: theme.colors.appCard,
     borderWidth: 1,
     borderColor: theme.colors.border,
     gap: 14,
+    shadowColor: "#171A28",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    elevation: 3,
+  },
+  pressed: {
+    opacity: 0.92,
+    transform: [{ translateY: 1 }],
   },
   headerRow: {
     flexDirection: "row",
@@ -78,23 +95,39 @@ const styles = StyleSheet.create({
   },
   titleGroup: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     flex: 1,
-    gap: 10,
+    gap: 12,
   },
-  priorityDot: {
-    width: 12,
-    height: 12,
+  titleCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  priorityStripe: {
+    width: 10,
+    height: 46,
     borderRadius: 999,
   },
   title: {
-    color: theme.colors.textPrimary,
-    fontSize: 17,
+    color: theme.colors.appTextInverse,
+    fontSize: 18,
     fontWeight: "800",
-    flex: 1,
+  },
+  inlineMeta: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  typeBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: theme.colors.backgroundStrong,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   typeLabel: {
-    color: theme.colors.textMuted,
+    color: theme.colors.appTextInverse,
     fontSize: 11,
     fontWeight: "800",
     letterSpacing: 0.8,
@@ -115,10 +148,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: theme.colors.surfaceMuted,
+    backgroundColor: theme.colors.backgroundStrong,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   metaText: {
-    color: theme.colors.textSecondary,
+    color: theme.colors.textPrimary,
     fontSize: 12,
     fontWeight: "700",
   },
@@ -131,9 +166,10 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     fontSize: 12,
     flex: 1,
+    fontWeight: "700",
   },
   shareText: {
-    color: theme.colors.accent,
+    color: theme.colors.mintHigh,
     fontSize: 12,
     fontWeight: "700",
   },

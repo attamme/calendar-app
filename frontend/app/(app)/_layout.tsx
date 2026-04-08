@@ -12,12 +12,13 @@ export default function AppTabsLayout() {
         tabBarInactiveTintColor: theme.colors.textMuted,
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.border,
-          height: 72,
-          paddingTop: 10,
+          borderTopColor: theme.colors.surface,
+          height: 67,
+          paddingTop: 8,
         },
         tabBarLabelStyle: {
-          fontWeight: "700",
+          fontWeight: "500",
+          fontSize: 12,
           paddingBottom: 8,
         },
       }}

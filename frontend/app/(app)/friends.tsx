@@ -1,5 +1,6 @@
 import { useIsFocused } from "@react-navigation/native";
-import { startTransition, useCallback, useEffect, useState } from "react";
+import { useRouter } from "expo-router";
+import { startTransition, useCallback, useEffect, useMemo, useState } from "react";
 import {
   RefreshControl,
   SafeAreaView,
@@ -10,15 +11,19 @@ import {
 } from "react-native";
 
 import Button from "@/components/button";
+import HiFiHeader from "@/components/HiFiHeader";
 import InputText from "@/components/InputText";
 import { useAuth } from "@/providers/AuthProvider";
+import { usePlannerSync } from "@/providers/PlannerSyncProvider";
 import { addFriend, fetchFriends } from "@/services/api";
 import { theme } from "@/theme/tokens";
 import type { FriendConnection } from "@/types/planner";
 import { formatRelativeDate } from "@/utils/dates";
 
 export default function FriendsScreen() {
+  const router = useRouter();
   const { token, signOut } = useAuth();
+  const { notifyPlannerChanged } = usePlannerSync();
   const isFocused = useIsFocused();
 
   const [friends, setFriends] = useState<FriendConnection[]>([]);
@@ -26,6 +31,14 @@ export default function FriendsScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [username, setUsername] = useState("");
+
+  const suggestedPeople = useMemo(
+    () => [
+      { id: "suggest-1", username: "Study Buddy", detail: "Search by username to invite someone new." },
+      { id: "suggest-2", username: "Project Partner", detail: "Shared events work well for one-off plans." },
+    ],
+    []
+  );
 
   const loadFriends = useCallback(async () => {
     if (!token) {
@@ -66,6 +79,7 @@ export default function FriendsScreen() {
       startTransition(() => {
         setUsername("");
       });
+      notifyPlannerChanged();
       await loadFriends();
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Failed to add friend");
@@ -88,21 +102,19 @@ export default function FriendsScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.heroCard}>
-          <Text style={styles.eyebrow}>Collaboration</Text>
-          <Text style={styles.title}>Build accountability without giving up control of your own plans.</Text>
-          <Text style={styles.subtitle}>
-            Add friends here first, then share whole calendars or only the specific event or task that matters.
-          </Text>
-        </View>
+        <HiFiHeader
+          leftIcon="chevron-left"
+          onLeftPress={() => router.push("/(app)/dashboard")}
+          title="Friends list"
+        />
 
-        <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Add a friend</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Find users</Text>
           <InputText
             autoCapitalize="none"
-            label="Username or email"
+            hideLabel
             onChangeText={setUsername}
-            placeholder="project-partner or alex@example.com"
+            placeholder="Search"
             value={username}
           />
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -114,12 +126,8 @@ export default function FriendsScreen() {
           />
         </View>
 
-        <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Your friend list</Text>
-          <Text style={styles.panelText}>
-            Tap into shared calendars from the calendars tab, or share a single event from the item editor.
-          </Text>
-
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Friends</Text>
           <View style={styles.friendList}>
             {friends.length ? (
               friends.map((friend) => (
@@ -129,24 +137,42 @@ export default function FriendsScreen() {
                   </View>
                   <View style={styles.friendCopy}>
                     <Text style={styles.friendName}>{friend.username}</Text>
-                    <Text style={styles.friendMeta}>{friend.email}</Text>
-                    <Text style={styles.friendMeta}>Connected {formatRelativeDate(friend.connected_at)}</Text>
+                    <Text style={styles.friendMeta}>
+                      {friend.email || `Connected ${formatRelativeDate(friend.connected_at)}`}
+                    </Text>
+                  </View>
+                  <View style={styles.actionBubble}>
+                    <Text style={styles.actionBubbleText}>+</Text>
                   </View>
                 </View>
               ))
             ) : (
-              <Text style={styles.emptyText}>No friends added yet. Start with one study partner or accountability buddy.</Text>
+              <Text style={styles.emptyText}>
+                No friends added yet. Start with one person and shared plans will feel much lighter.
+              </Text>
             )}
           </View>
         </View>
 
-        <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Session</Text>
-          <Text style={styles.panelText}>
-            Your session stays signed in, but you can log out here any time.
-          </Text>
-          <Button onPress={signOut} title="Log out" variant="secondary" />
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>People you may know</Text>
+          <View style={styles.friendList}>
+            {suggestedPeople.map((person) => (
+              <View key={person.id} style={styles.friendCard}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{person.username.slice(0, 1).toUpperCase()}</Text>
+                </View>
+                <View style={styles.friendCopy}>
+                  <Text style={styles.friendName}>{person.username}</Text>
+                  <Text style={styles.friendMeta}>{person.detail}</Text>
+                </View>
+                <View style={styles.actionBubble} />
+              </View>
+            ))}
+          </View>
         </View>
+
+        <Button onPress={signOut} title="Log out" variant="secondary" />
       </ScrollView>
     </SafeAreaView>
   );
@@ -159,50 +185,16 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
-    gap: 18,
+    gap: 20,
     paddingBottom: 36,
   },
-  heroCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: 30,
-    padding: 22,
+  section: {
     gap: 12,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
   },
-  eyebrow: {
-    color: theme.colors.coral,
-    fontSize: 12,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-  },
-  title: {
-    color: theme.colors.textPrimary,
-    fontSize: 28,
-    fontWeight: "800",
-    lineHeight: 36,
-  },
-  subtitle: {
+  sectionLabel: {
     color: theme.colors.textSecondary,
-    lineHeight: 22,
-  },
-  panel: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: 20,
-    gap: 16,
-  },
-  panelTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 22,
-    fontWeight: "800",
-  },
-  panelText: {
-    color: theme.colors.textSecondary,
-    lineHeight: 21,
+    fontSize: 16,
+    fontWeight: "500",
   },
   friendList: {
     gap: 12,
@@ -210,22 +202,23 @@ const styles = StyleSheet.create({
   friendCard: {
     flexDirection: "row",
     gap: 14,
-    padding: 16,
-    borderRadius: 22,
-    backgroundColor: theme.colors.surfaceMuted,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: theme.colors.surface,
+    alignItems: "center",
   },
   avatar: {
-    width: 44,
-    height: 44,
+    width: 38,
+    height: 38,
     borderRadius: 999,
-    backgroundColor: theme.colors.accentSoft,
+    backgroundColor: theme.colors.appCardMuted,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
-    color: theme.colors.accent,
+    color: theme.colors.textPrimary,
+    fontSize: 16,
     fontWeight: "800",
-    fontSize: 18,
   },
   friendCopy: {
     flex: 1,
@@ -233,14 +226,28 @@ const styles = StyleSheet.create({
   },
   friendName: {
     color: theme.colors.textPrimary,
-    fontSize: 17,
-    fontWeight: "800",
+    fontSize: 15,
+    fontWeight: "500",
   },
   friendMeta: {
     color: theme.colors.textSecondary,
+    fontSize: 13,
+  },
+  actionBubble: {
+    width: 52,
+    height: 52,
+    borderRadius: 999,
+    backgroundColor: theme.colors.appCardMuted,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionBubbleText: {
+    color: theme.colors.textPrimary,
+    fontSize: 24,
+    lineHeight: 24,
   },
   emptyText: {
-    color: theme.colors.textMuted,
+    color: theme.colors.textSecondary,
     lineHeight: 20,
   },
   errorText: {

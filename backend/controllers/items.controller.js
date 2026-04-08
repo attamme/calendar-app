@@ -17,7 +17,7 @@ const {
   sanitizeText,
 } = require("../utils/planner");
 
-async function hydrateItems(items, userId) {
+async function hydrateItems(items, userId, accessibleCalendarIds = []) {
   if (!items.length) {
     return [];
   }
@@ -36,6 +36,7 @@ async function hydrateItems(items, userId) {
       "shares.item_id",
       "shares.user_id",
       "shares.permission",
+      "shares.target_calendar_id",
       "users.username",
       "users.email"
     );
@@ -55,12 +56,40 @@ async function hydrateItems(items, userId) {
     shareMap.set(share.item_id, current);
   });
 
-  return items.map((item) => ({
-    ...item,
-    is_owner: item.owner_id === userId,
-    reminders: reminderMap.get(item.id) || [],
-    shares: shareMap.get(item.id) || [],
-  }));
+  const accessibleCalendarIdSet = new Set(accessibleCalendarIds);
+
+  return items.map((item) => {
+    const isOwner = item.owner_id === userId;
+    const isDirectShare = Boolean(item.direct_share_id);
+    const canSeeSourceCalendar =
+      item.source_calendar_id && accessibleCalendarIdSet.has(item.source_calendar_id);
+
+    const effectiveCalendarId =
+      isOwner
+        ? item.source_calendar_id
+        : item.share_calendar_id || (canSeeSourceCalendar ? item.source_calendar_id : null);
+    const effectiveCalendarTitle =
+      isOwner
+        ? item.source_calendar_title
+        : item.share_calendar_title || (canSeeSourceCalendar ? item.source_calendar_title : null);
+    const effectiveCalendarColor =
+      isOwner
+        ? item.source_calendar_color
+        : item.share_calendar_color || (canSeeSourceCalendar ? item.source_calendar_color : null);
+
+    return {
+      ...item,
+      calendar_id: effectiveCalendarId,
+      calendar_title: effectiveCalendarTitle,
+      calendar_color: effectiveCalendarColor,
+      is_owner: isOwner,
+      is_direct_share: isDirectShare,
+      direct_share_permission: item.direct_share_permission || null,
+      share_calendar_id: item.share_calendar_id || null,
+      reminders: reminderMap.get(item.id) || [],
+      shares: shareMap.get(item.id) || [],
+    };
+  });
 }
 
 async function queryAccessibleItems(userId) {
@@ -68,11 +97,23 @@ async function queryAccessibleItems(userId) {
   const sharedItemIds = await getDirectlySharedItemIds(userId);
 
   const query = knex("planner_items as items")
-    .leftJoin("calendars as calendars", "items.calendar_id", "calendars.id")
+    .leftJoin("calendars as source_calendars", "items.calendar_id", "source_calendars.id")
     .leftJoin("users as owners", "items.owner_id", "owners.id")
+    .leftJoin("item_shares as direct_share", function joinDirectShare() {
+      this.on("items.id", "direct_share.item_id").andOn(
+        "direct_share.user_id",
+        "=",
+        knex.raw("?", [userId])
+      );
+    })
+    .leftJoin(
+      "calendars as share_calendars",
+      "direct_share.target_calendar_id",
+      "share_calendars.id"
+    )
     .select(
       "items.id",
-      "items.calendar_id",
+      "items.calendar_id as source_calendar_id",
       "items.owner_id",
       "items.type",
       "items.title",
@@ -90,9 +131,14 @@ async function queryAccessibleItems(userId) {
       "items.is_all_day",
       "items.created_at",
       "items.updated_at",
-      "calendars.title as calendar_title",
-      "calendars.color as calendar_color",
-      "owners.username as owner_username"
+      "source_calendars.title as source_calendar_title",
+      "source_calendars.color as source_calendar_color",
+      "owners.username as owner_username",
+      "direct_share.id as direct_share_id",
+      "direct_share.permission as direct_share_permission",
+      "direct_share.target_calendar_id as share_calendar_id",
+      "share_calendars.title as share_calendar_title",
+      "share_calendars.color as share_calendar_color"
     )
     .where("items.owner_id", userId);
 
@@ -105,7 +151,7 @@ async function queryAccessibleItems(userId) {
   }
 
   const items = await query.orderBy("items.updated_at", "desc");
-  return hydrateItems(items, userId);
+  return hydrateItems(items, userId, calendarIds);
 }
 
 async function dashboard(req, res) {
@@ -234,6 +280,14 @@ async function updateItem(req, res) {
   try {
     const itemId = Number(req.params.id);
     const access = await getItemAccess(req.auth.userId, itemId);
+    const directShare = access?.isOwner
+      ? null
+      : await knex("item_shares")
+          .where({
+            item_id: itemId,
+            user_id: req.auth.userId,
+          })
+          .first();
 
     if (!access?.canEdit) {
       return sendError(res, 403, "You do not have permission to edit this item");
@@ -248,7 +302,7 @@ async function updateItem(req, res) {
       return sendError(res, 400, "Item title is required");
     }
 
-    if (req.body.calendarId) {
+    if (req.body.calendarId && !directShare) {
       const calendarAccess = await getCalendarAccess(
         req.auth.userId,
         Number(req.body.calendarId)
@@ -268,7 +322,7 @@ async function updateItem(req, res) {
         .where({ id: itemId })
         .update({
           ...input,
-          calendar_id: req.body.calendarId
+          calendar_id: req.body.calendarId && !directShare
             ? Number(req.body.calendarId)
             : access.item.calendar_id,
           completed_at:
@@ -351,6 +405,57 @@ async function shareItem(req, res) {
   }
 }
 
+async function setMyItemCalendar(req, res) {
+  try {
+    const itemId = Number(req.params.id);
+    const calendarId = req.body.calendarId ? Number(req.body.calendarId) : null;
+    const access = await getItemAccess(req.auth.userId, itemId);
+
+    if (!access?.canView) {
+      return sendError(res, 404, "Item not found");
+    }
+
+    if (access.isOwner) {
+      return sendError(res, 400, "Use the item editor to change the owner's calendar");
+    }
+
+    const directShare = await knex("item_shares")
+      .where({
+        item_id: itemId,
+        user_id: req.auth.userId,
+      })
+      .first();
+
+    if (!directShare) {
+      return sendError(res, 403, "Only directly shared items can be filed into your own calendars");
+    }
+
+    if (calendarId) {
+      const calendarAccess = await getCalendarAccess(req.auth.userId, calendarId);
+
+      if (!calendarAccess?.canView) {
+        return sendError(res, 403, "Choose one of your accessible calendars");
+      }
+    }
+
+    await knex("item_shares")
+      .where({
+        item_id: itemId,
+        user_id: req.auth.userId,
+      })
+      .update({
+        target_calendar_id: calendarId,
+      });
+
+    const items = await queryAccessibleItems(req.auth.userId);
+    const item = items.find((entry) => entry.id === itemId);
+
+    return sendSuccess(res, 200, { item });
+  } catch (error) {
+    return sendError(res, 500, "Failed to update your calendar for this shared item");
+  }
+}
+
 module.exports = {
   dashboard,
   listItems,
@@ -358,4 +463,5 @@ module.exports = {
   createItem,
   updateItem,
   shareItem,
+  setMyItemCalendar,
 };

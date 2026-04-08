@@ -1,6 +1,6 @@
 import { useIsFocused } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { startTransition, useCallback, useEffect, useState } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import {
   RefreshControl,
   SafeAreaView,
@@ -13,12 +13,15 @@ import {
 import Button from "@/components/button";
 import Chip from "@/components/Chip";
 import InputText from "@/components/InputText";
+import TopBar from "@/components/TopBar";
 import { useAuth } from "@/providers/AuthProvider";
+import { usePlannerSync } from "@/providers/PlannerSyncProvider";
 import {
   createItem,
   fetchCalendars,
   fetchFriends,
   fetchItem,
+  setMySharedItemCalendar,
   shareItem,
   updateItem,
 } from "@/services/api";
@@ -33,7 +36,7 @@ import type {
   PlannerItem,
   SharePermission,
 } from "@/types/planner";
-import { fromInputDateTime, plusDays, plusHours, toInputDateTime } from "@/utils/dates";
+import { fromInputDateTime, nextOccurrenceAt, todayAt, tomorrowAt, toInputDateTime } from "@/utils/dates";
 
 const reminderOptions = [
   { label: "10 min", value: 10, tone: "coral" as const },
@@ -49,14 +52,36 @@ const recurrenceOptions = [
   { label: "Weekdays", value: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR" },
 ];
 
+function readParam(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] || "" : value || "";
+}
+
 export default function PlannerItemEditorScreen() {
-  const params = useLocalSearchParams<{ id: string; type?: string; calendarId?: string }>();
+  const params = useLocalSearchParams<{
+    id: string;
+    type?: string;
+    calendarId?: string;
+    dueAt?: string;
+    startAt?: string;
+    endAt?: string;
+  }>();
   const router = useRouter();
   const isFocused = useIsFocused();
   const { token } = useAuth();
+  const { notifyPlannerChanged } = usePlannerSync();
 
-  const isNew = params.id === "new";
-  const initialType: ItemType = params.type === "event" ? "event" : "task";
+  const itemId = readParam(params.id);
+  const typeParam = readParam(params.type);
+  const calendarIdParam = readParam(params.calendarId);
+  const dueAtParam = readParam(params.dueAt);
+  const startAtParam = readParam(params.startAt);
+  const endAtParam = readParam(params.endAt);
+
+  const isNew = itemId === "new";
+  const initialType: ItemType = typeParam === "event" ? "event" : "task";
+  const initialDueInput = toInputDateTime(dueAtParam || nextOccurrenceAt(18));
+  const initialStartInput = toInputDateTime(startAtParam || tomorrowAt(9));
+  const initialEndInput = toInputDateTime(endAtParam || tomorrowAt(10));
 
   const [item, setItem] = useState<PlannerItem | null>(null);
   const [calendars, setCalendars] = useState<PlannerCalendar[]>([]);
@@ -65,6 +90,7 @@ export default function PlannerItemEditorScreen() {
   const [saving, setSaving] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [error, setError] = useState("");
+  const loadRequestRef = useRef(0);
 
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
@@ -74,21 +100,26 @@ export default function PlannerItemEditorScreen() {
   const [effort, setEffort] = useState<ItemEffort>("medium");
   const [category, setCategory] = useState("");
   const [calendarId, setCalendarId] = useState<number | null>(
-    params.calendarId ? Number(params.calendarId) : null
+    calendarIdParam ? Number(calendarIdParam) : null
   );
-  const [startInput, setStartInput] = useState(toInputDateTime(plusDays(1, 9)));
-  const [endInput, setEndInput] = useState(toInputDateTime(plusDays(1, 10)));
-  const [dueInput, setDueInput] = useState(toInputDateTime(plusHours(6)));
+  const [myShareCalendarId, setMyShareCalendarId] = useState<number | null>(null);
+  const [startInput, setStartInput] = useState(initialStartInput);
+  const [endInput, setEndInput] = useState(initialEndInput);
+  const [dueInput, setDueInput] = useState(initialDueInput);
   const [selectedReminders, setSelectedReminders] = useState<number[]>([60]);
   const [recurrenceRule, setRecurrenceRule] = useState("");
 
   const [shareUsername, setShareUsername] = useState("");
   const [sharePermission, setSharePermission] = useState<Exclude<SharePermission, "owner">>("view");
+  const [assigningCalendar, setAssigningCalendar] = useState(false);
 
   const loadEditorData = useCallback(async () => {
     if (!token) {
       return;
     }
+
+    const requestId = loadRequestRef.current + 1;
+    loadRequestRef.current = requestId;
 
     try {
       setRefreshing(true);
@@ -97,8 +128,12 @@ export default function PlannerItemEditorScreen() {
       const [calendarResponse, friendResponse, itemResponse] = await Promise.all([
         fetchCalendars(token),
         fetchFriends(token),
-        isNew ? Promise.resolve(null) : fetchItem(params.id, token),
+        isNew ? Promise.resolve(null) : fetchItem(itemId, token),
       ]);
+
+      if (requestId !== loadRequestRef.current) {
+        return;
+      }
 
       startTransition(() => {
         setCalendars(calendarResponse.calendars);
@@ -111,11 +146,17 @@ export default function PlannerItemEditorScreen() {
         setCalendarId(calendarResponse.calendars[0].id);
       }
     } catch (caughtError) {
+      if (requestId !== loadRequestRef.current) {
+        return;
+      }
+
       setError(caughtError instanceof Error ? caughtError.message : "Failed to load item");
     } finally {
-      setRefreshing(false);
+      if (requestId === loadRequestRef.current) {
+        setRefreshing(false);
+      }
     }
-  }, [calendarId, isNew, params.id, token]);
+  }, [calendarId, isNew, itemId, token]);
 
   useEffect(() => {
     if (!token || !isFocused) {
@@ -123,7 +164,7 @@ export default function PlannerItemEditorScreen() {
     }
 
     loadEditorData();
-  }, [token, isFocused, params.id, loadEditorData]);
+  }, [token, isFocused, itemId, loadEditorData]);
 
   function applyItemToForm(nextItem: PlannerItem) {
     startTransition(() => {
@@ -136,6 +177,7 @@ export default function PlannerItemEditorScreen() {
       setEffort(nextItem.effort);
       setCategory(nextItem.category);
       setCalendarId(nextItem.calendar_id);
+      setMyShareCalendarId(nextItem.share_calendar_id || null);
       setStartInput(toInputDateTime(nextItem.start_at));
       setEndInput(toInputDateTime(nextItem.end_at));
       setDueInput(toInputDateTime(nextItem.due_at));
@@ -156,7 +198,29 @@ export default function PlannerItemEditorScreen() {
     );
   }
 
-  async function handleSave() {
+  function applySchedulePreset(dayOffset: number, hour: number) {
+    const anchor = dayOffset === 0 ? todayAt(hour) : tomorrowAt(hour);
+
+    if (type === "event") {
+      const endAnchor = dayOffset === 0 ? todayAt(hour + 1) : tomorrowAt(hour + 1);
+      setStartInput(toInputDateTime(anchor));
+      setEndInput(toInputDateTime(endAnchor));
+      return;
+    }
+
+    setDueInput(toInputDateTime(anchor));
+  }
+
+  function exitEditor() {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace("/(app)/dashboard");
+  }
+
+  async function handleSave(overrides?: { status?: ItemStatus }) {
     if (!token) {
       return;
     }
@@ -165,13 +229,15 @@ export default function PlannerItemEditorScreen() {
       setSaving(true);
       setError("");
 
+      const nextStatus = overrides?.status || status;
+      const canEditSourceCalendar = isNew || item?.is_owner || !item?.is_direct_share;
       const payload = {
-        calendarId,
+        calendarId: canEditSourceCalendar ? calendarId : undefined,
         type,
         title,
         notes,
         category,
-        status,
+        status: nextStatus,
         priority,
         effort,
         startAt: startInput ? fromInputDateTime(startInput) : undefined,
@@ -184,14 +250,41 @@ export default function PlannerItemEditorScreen() {
       if (isNew) {
         await createItem(payload, token);
       } else {
-        await updateItem(params.id, payload, token);
+        await updateItem(itemId, payload, token);
       }
 
-      router.back();
+      notifyPlannerChanged();
+      exitEditor();
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Failed to save item");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleComplete() {
+    await handleSave({ status: "completed" });
+  }
+
+  async function handleAssignMyCalendar(nextCalendarId: number | null) {
+    if (!token || isNew) {
+      return;
+    }
+
+    try {
+      setAssigningCalendar(true);
+      setError("");
+      const response = await setMySharedItemCalendar(itemId, nextCalendarId, token);
+      applyItemToForm(response.item);
+      notifyPlannerChanged();
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Failed to place this shared item into your calendar"
+      );
+    } finally {
+      setAssigningCalendar(false);
     }
   }
 
@@ -203,12 +296,13 @@ export default function PlannerItemEditorScreen() {
     try {
       setSharing(true);
       setError("");
-      await shareItem(params.id, shareUsername, sharePermission, token);
+      await shareItem(itemId, shareUsername, sharePermission, token);
       startTransition(() => {
         setShareUsername("");
       });
-      const response = await fetchItem(params.id, token);
+      const response = await fetchItem(itemId, token);
       applyItemToForm(response.item);
+      notifyPlannerChanged();
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Failed to share item");
     } finally {
@@ -230,35 +324,45 @@ export default function PlannerItemEditorScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.heroCard}>
-          <Text style={styles.eyebrow}>{isNew ? "New item" : "Edit item"}</Text>
-          <Text style={styles.title}>
-            {isNew ? "Add a task or event with reminders and sharing built in." : "Adjust details without losing momentum."}
-          </Text>
-          <Text style={styles.subtitle}>
-            Use the quick fields for capture, then add date context, reminders, recurrence, and direct sharing when it helps.
-          </Text>
-        </View>
+        <TopBar
+          actionDisabled={saving || !title.trim()}
+          actionLabel={saving ? "Saving..." : "Save"}
+          onAction={() => handleSave()}
+          onBack={exitEditor}
+          subtitle={
+            item?.is_direct_share && !item.is_owner
+              ? "Shared items can live in your own calendar without moving the original."
+              : type === "event"
+                ? "Keep the event details lightweight, visible, and easy to adjust."
+                : "Quick details first. Everything else can stay optional."
+          }
+          title={isNew ? "New reminder" : "Edit reminder"}
+          tone="figma"
+        />
 
         <View style={styles.panel}>
+          <Text style={styles.panelTitle}>Info</Text>
           <InputText
-            label="Title"
+            hideLabel
             onChangeText={setTitle}
-            placeholder="Exam prep sprint, call the bank, therapy on Tuesday..."
+            placeholder="Title"
             value={title}
+            variant="figma"
           />
           <InputText
-            label="Notes"
+            hideLabel
             multiline
             onChangeText={setNotes}
-            placeholder="Helpful details, links, what success looks like, or a breakdown for future-you."
+            placeholder="Notes"
             value={notes}
+            variant="figma"
           />
           <InputText
-            label="Category"
+            hideLabel
             onChangeText={setCategory}
-            placeholder="essay, groceries, admin, routine..."
+            placeholder="Category"
             value={category}
+            variant="figma"
           />
 
           <View style={styles.group}>
@@ -329,80 +433,111 @@ export default function PlannerItemEditorScreen() {
             </View>
           </View>
 
-          <View style={styles.group}>
-            <Text style={styles.groupLabel}>Calendar</Text>
-            <View style={styles.chipRow}>
-              {calendars.map((calendar) => (
+          {item?.is_direct_share && !item.is_owner ? (
+            <View style={styles.group}>
+              <Text style={styles.groupLabel}>Shared item placement</Text>
+              <Text style={styles.helperText}>
+                Source calendar: {item.source_calendar_title || "Shared directly"}.
+                Choose where this appears for you without moving it for everyone else.
+              </Text>
+              <View style={styles.chipRow}>
                 <Chip
-                  key={calendar.id}
-                  label={calendar.title}
-                  onPress={() => setCalendarId(calendar.id)}
-                  selected={calendarId === calendar.id}
-                  tone={calendar.is_owner ? "accent" : "amber"}
+                  label={item.source_calendar_title ? "Original calendar" : "Keep separate"}
+                  onPress={() => handleAssignMyCalendar(null)}
+                  selected={myShareCalendarId === null}
+                  tone="neutral"
                 />
-              ))}
+                {calendars.map((calendar) => (
+                  <Chip
+                    key={calendar.id}
+                    label={calendar.title}
+                    onPress={() => handleAssignMyCalendar(calendar.id)}
+                    selected={myShareCalendarId === calendar.id}
+                    tone={calendar.is_owner ? "accent" : "amber"}
+                  />
+                ))}
+              </View>
+              {assigningCalendar ? <Text style={styles.helperText}>Saving your placement...</Text> : null}
             </View>
-          </View>
+          ) : (
+            <View style={styles.group}>
+              <Text style={styles.groupLabel}>Calendar</Text>
+              <View style={styles.chipRow}>
+                {calendars.map((calendar) => (
+                  <Chip
+                    key={calendar.id}
+                    label={calendar.title}
+                    onPress={() => setCalendarId(calendar.id)}
+                    selected={calendarId === calendar.id}
+                    tone={calendar.is_owner ? "accent" : "amber"}
+                  />
+                ))}
+              </View>
+            </View>
+          )}
         </View>
 
         <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Schedule</Text>
+          <Text style={styles.panelTitle}>Date & Time</Text>
+          <Text style={styles.panelText}>
+            {type === "event"
+              ? "Set the window people should see on the calendar."
+              : "Use a simple due moment so today and tomorrow stay accurate."}
+          </Text>
           {type === "event" ? (
             <>
               <InputText
                 autoCapitalize="none"
-                label="Start"
+                hideLabel
                 onChangeText={setStartInput}
-                placeholder="2026-04-08 09:00"
+                placeholder="Start"
                 value={startInput}
+                variant="figma"
               />
               <InputText
                 autoCapitalize="none"
-                label="End"
+                hideLabel
                 onChangeText={setEndInput}
-                placeholder="2026-04-08 10:00"
+                placeholder="End"
                 value={endInput}
+                variant="figma"
               />
             </>
           ) : (
             <InputText
               autoCapitalize="none"
-              label="Due"
+              hideLabel
               onChangeText={setDueInput}
-              placeholder="2026-04-08 18:00"
+              placeholder="Due date and time"
               value={dueInput}
+              variant="figma"
             />
           )}
 
           <View style={styles.chipRow}>
             <Chip
               label="Today 6pm"
-              onPress={() => setDueInput(toInputDateTime(plusHours(6)))}
+              onPress={() => applySchedulePreset(0, 18)}
               tone="accent"
             />
             <Chip
               label="Tomorrow 9am"
-              onPress={() => {
-                const tomorrowMorning = toInputDateTime(plusDays(1, 9));
-                if (type === "event") {
-                  setStartInput(tomorrowMorning);
-                  setEndInput(toInputDateTime(plusDays(1, 10)));
-                } else {
-                  setDueInput(tomorrowMorning);
-                }
-              }}
+              onPress={() => applySchedulePreset(1, 9)}
               tone="mint"
             />
             <Chip
               label="Tomorrow 6pm"
-              onPress={() => setDueInput(toInputDateTime(plusDays(1, 18)))}
+              onPress={() => applySchedulePreset(1, 18)}
               tone="amber"
             />
           </View>
         </View>
 
         <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Reminders and recurrence</Text>
+          <Text style={styles.panelTitle}>Extra</Text>
+          <Text style={styles.panelText}>
+            Keep reminders and repeats light. You can always add more later.
+          </Text>
 
           <View style={styles.group}>
             <Text style={styles.groupLabel}>Reminder offsets</Text>
@@ -437,13 +572,17 @@ export default function PlannerItemEditorScreen() {
 
         {!isNew ? (
           <View style={styles.panel}>
-            <Text style={styles.panelTitle}>Share this item</Text>
+            <Text style={styles.panelTitle}>People</Text>
+            <Text style={styles.panelText}>
+              Share the item with one friend, then let each person place it into the calendar that fits them.
+            </Text>
             <InputText
               autoCapitalize="none"
-              label="Friend username"
+              hideLabel
               onChangeText={setShareUsername}
-              placeholder="Type a friend or tap one below"
+              placeholder="Friend username"
               value={shareUsername}
+              variant="figma"
             />
 
             <View style={styles.chipRow}>
@@ -494,8 +633,22 @@ export default function PlannerItemEditorScreen() {
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
         <View style={styles.footer}>
-          <Button loading={saving} onPress={handleSave} title={isNew ? "Create item" : "Save changes"} />
-          <Button onPress={() => router.back()} title="Cancel" variant="secondary" />
+          {!isNew && status !== "completed" ? (
+            <Button
+              loading={saving}
+              onPress={handleComplete}
+              style={styles.completeButton}
+              textStyle={styles.completeButtonText}
+              title="Mark complete"
+              variant="secondary"
+            />
+          ) : null}
+          <Button
+            loading={saving}
+            onPress={() => handleSave()}
+            style={styles.saveButton}
+            title={isNew ? "Create item" : "Save changes"}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -505,60 +658,41 @@ export default function PlannerItemEditorScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.figmaMain,
   },
   content: {
     padding: 20,
     gap: 18,
     paddingBottom: 36,
   },
-  heroCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: 30,
-    padding: 22,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  eyebrow: {
-    color: theme.colors.accent,
-    fontSize: 12,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-  },
-  title: {
-    color: theme.colors.textPrimary,
-    fontSize: 28,
-    fontWeight: "800",
-    lineHeight: 36,
-  },
-  subtitle: {
-    color: theme.colors.textSecondary,
-    lineHeight: 22,
-  },
   panel: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: theme.colors.figmaSurface,
     borderRadius: 28,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    padding: 20,
-    gap: 16,
+    padding: 18,
+    gap: 14,
   },
   panelTitle: {
-    color: theme.colors.textPrimary,
+    color: theme.colors.figmaText,
     fontSize: 22,
-    fontWeight: "800",
+    fontWeight: "700",
+  },
+  panelText: {
+    color: theme.colors.figmaSubtext,
+    lineHeight: 21,
   },
   group: {
     gap: 10,
   },
   groupLabel: {
-    color: theme.colors.textSecondary,
+    color: theme.colors.figmaSubtext,
     fontSize: 13,
     fontWeight: "800",
     letterSpacing: 0.6,
     textTransform: "uppercase",
+  },
+  helperText: {
+    color: theme.colors.figmaSubtext,
+    lineHeight: 20,
   },
   chipRow: {
     flexDirection: "row",
@@ -573,22 +707,33 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: theme.colors.figmaSurfaceAlt,
   },
   shareName: {
-    color: theme.colors.textPrimary,
+    color: theme.colors.figmaText,
     fontWeight: "700",
   },
   shareMeta: {
-    color: theme.colors.textSecondary,
+    color: theme.colors.figmaSubtext,
     textTransform: "capitalize",
   },
   footer: {
     gap: 12,
     paddingBottom: 24,
   },
+  saveButton: {
+    backgroundColor: theme.colors.figmaAccent,
+    borderColor: theme.colors.figmaAccent,
+  },
+  completeButton: {
+    backgroundColor: theme.colors.figmaSurface,
+    borderColor: theme.colors.figmaSurface,
+  },
+  completeButtonText: {
+    color: theme.colors.figmaText,
+  },
   errorText: {
-    color: theme.colors.coral,
+    color: "#FFB4B4",
     fontWeight: "700",
   },
 });

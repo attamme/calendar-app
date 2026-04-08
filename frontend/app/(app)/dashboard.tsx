@@ -1,6 +1,6 @@
-import { useIsFocused } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import { startTransition, useCallback, useEffect, useState } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import {
   RefreshControl,
   SafeAreaView,
@@ -11,11 +11,15 @@ import {
 } from "react-native";
 
 import Button from "@/components/button";
+import AnimatedScreenSection from "@/components/AnimatedScreenSection";
 import Chip from "@/components/Chip";
+import FeaturedPlannerCard from "@/components/FeaturedPlannerCard";
+import FocusBucketCard from "@/components/FocusBucketCard";
+import HiFiHeader from "@/components/HiFiHeader";
 import InputText from "@/components/InputText";
-import MetricCard from "@/components/MetricCard";
 import PlannerCard from "@/components/PlannerCard";
 import { useAuth } from "@/providers/AuthProvider";
+import { usePlannerSync } from "@/providers/PlannerSyncProvider";
 import { createItem, fetchCalendars, fetchDashboard } from "@/services/api";
 import { theme } from "@/theme/tokens";
 import type {
@@ -24,8 +28,9 @@ import type {
   ItemType,
   PlannerCalendar,
   PlannerDashboard,
+  PlannerItem,
 } from "@/types/planner";
-import { plusDays, plusHours } from "@/utils/dates";
+import { nextOccurrenceAt, tomorrowAt } from "@/utils/dates";
 
 const reminderOptions = [
   { label: "10m", value: 10, tone: "coral" as const },
@@ -47,16 +52,25 @@ const effortOptions: { label: string; value: ItemEffort; tone: "mint" | "amber" 
   { label: "Deep work", value: "high", tone: "coral" },
 ];
 
+function buildNewItemParams(type: ItemType, calendarId: number | null) {
+  return {
+    id: "new",
+    type,
+    ...(calendarId ? { calendarId: String(calendarId) } : {}),
+  };
+}
+
 export default function DashboardScreen() {
   const router = useRouter();
-  const isFocused = useIsFocused();
-  const { token, user } = useAuth();
+  const { token } = useAuth();
+  const { notifyPlannerChanged, refreshVersion } = usePlannerSync();
 
   const [dashboard, setDashboard] = useState<PlannerDashboard | null>(null);
   const [calendars, setCalendars] = useState<PlannerCalendar[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const loadRequestRef = useRef(0);
 
   const [quickTitle, setQuickTitle] = useState("");
   const [quickType, setQuickType] = useState<ItemType>("task");
@@ -65,10 +79,37 @@ export default function DashboardScreen() {
   const [selectedCalendarId, setSelectedCalendarId] = useState<number | null>(null);
   const [selectedReminders, setSelectedReminders] = useState<number[]>([60]);
 
+  const liveQueue = dashboard?.sections.today.length
+    ? dashboard.sections.today
+    : dashboard?.sections.nextUp || [];
+  const [featuredIndex, setFeaturedIndex] = useState(0);
+  const featuredItem = liveQueue[featuredIndex] || null;
+  const upcomingFeaturedItems = liveQueue.slice(featuredIndex + 1, featuredIndex + 6);
+
+  const openNewItem = useCallback(
+    (type: ItemType) => {
+      router.push({
+        pathname: "/planner-item/[id]",
+        params: buildNewItemParams(type, selectedCalendarId),
+      });
+    },
+    [router, selectedCalendarId]
+  );
+
+  const openItem = useCallback(
+    (item: PlannerItem) => {
+      router.push(`/planner-item/${item.id}`);
+    },
+    [router]
+  );
+
   const loadScreenData = useCallback(async () => {
     if (!token) {
       return;
     }
+
+    const requestId = loadRequestRef.current + 1;
+    loadRequestRef.current = requestId;
 
     try {
       setError("");
@@ -79,25 +120,61 @@ export default function DashboardScreen() {
         fetchCalendars(token),
       ]);
 
+      if (requestId !== loadRequestRef.current) {
+        return;
+      }
+
       startTransition(() => {
         setDashboard(dashboardResponse);
         setCalendars(calendarResponse.calendars);
         setSelectedCalendarId((current) => current || calendarResponse.calendars[0]?.id || null);
+        setFeaturedIndex((current) => {
+          if (!dashboardResponse.sections.today.length && !dashboardResponse.sections.nextUp.length) {
+            return 0;
+          }
+
+          const nextQueue = dashboardResponse.sections.today.length
+            ? dashboardResponse.sections.today
+            : dashboardResponse.sections.nextUp;
+
+          return Math.min(current, Math.max(nextQueue.length - 1, 0));
+        });
       });
     } catch (caughtError) {
+      if (requestId !== loadRequestRef.current) {
+        return;
+      }
+
       setError(caughtError instanceof Error ? caughtError.message : "Failed to load dashboard");
     } finally {
-      setRefreshing(false);
+      if (requestId === loadRequestRef.current) {
+        setRefreshing(false);
+      }
     }
   }, [token]);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (!token) {
+        return undefined;
+      }
+
+      loadScreenData();
+      const refreshId = setInterval(() => {
+        loadScreenData();
+      }, 30000);
+
+      return () => clearInterval(refreshId);
+    }, [loadScreenData, token])
+  );
+
   useEffect(() => {
-    if (!token || !isFocused) {
+    if (!token) {
       return;
     }
 
     loadScreenData();
-  }, [token, isFocused, loadScreenData]);
+  }, [loadScreenData, refreshVersion, token]);
 
   function toggleReminder(offsetMinutes: number) {
     setSelectedReminders((current) =>
@@ -118,14 +195,14 @@ export default function DashboardScreen() {
 
       await createItem(
         {
-          title: quickTitle,
+          title: quickTitle.trim(),
           type: quickType,
           priority: quickPriority,
           effort: quickEffort,
           calendarId: selectedCalendarId,
-          dueAt: quickType === "task" ? plusHours(6) : plusDays(1, 9),
-          startAt: quickType === "event" ? plusDays(1, 9) : undefined,
-          endAt: quickType === "event" ? plusDays(1, 10) : undefined,
+          dueAt: quickType === "task" ? nextOccurrenceAt(18) : undefined,
+          startAt: quickType === "event" ? tomorrowAt(9) : undefined,
+          endAt: quickType === "event" ? tomorrowAt(10) : undefined,
           reminders: selectedReminders,
         },
         token
@@ -138,6 +215,7 @@ export default function DashboardScreen() {
         setSelectedReminders([60]);
       });
 
+      notifyPlannerChanged();
       await loadScreenData();
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Quick add failed");
@@ -146,8 +224,18 @@ export default function DashboardScreen() {
     }
   }
 
+  const todayItems = dashboard?.sections.today || [];
+  const overdueItems = dashboard?.sections.overdue || [];
+  const easyWinItems = dashboard?.sections.easyWins || [];
+  const nextUpItems = dashboard?.sections.nextUp || [];
+  const sharedItems = dashboard?.sections.shared || [];
+  const activeCalendars = calendars.slice(0, 3);
+
   return (
     <SafeAreaView style={styles.safeArea}>
+      <View pointerEvents="none" style={styles.glowA} />
+      <View pointerEvents="none" style={styles.glowB} />
+
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
@@ -155,59 +243,122 @@ export default function DashboardScreen() {
           <RefreshControl
             onRefresh={loadScreenData}
             refreshing={refreshing}
-            tintColor={theme.colors.accent}
+            tintColor={theme.colors.accentHigh}
           />
         }
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.heroCard}>
-          <Text style={styles.eyebrow}>Daily focus</Text>
-          <Text style={styles.title}>Hi {user?.username || "there"}, what needs your attention next?</Text>
-          <Text style={styles.subtitle}>
-            Capture a task quickly, then use smart groups to work through today, next up, overdue, and easy wins without losing context.
-          </Text>
-          <View style={styles.metricRow}>
-            <MetricCard
-              label="Today"
-              tone="accent"
-              value={dashboard?.summary.todayCount || 0}
+        <AnimatedScreenSection delay={0}>
+          <HiFiHeader
+            leftIcon="menu"
+            onLeftPress={() => router.push("/(app)/friends")}
+            rightIcon="calendar-month-outline"
+            onRightPress={() => router.push("/(app)/calendars")}
+            title="My calendar"
+          />
+        </AnimatedScreenSection>
+
+        <AnimatedScreenSection delay={40} style={styles.heroSection}>
+          <View style={styles.heroCopy}>
+            <Text style={styles.heroEyebrow}>Daily focus</Text>
+            <Text style={styles.heroTitle}>
+              {featuredItem ? "Keep one thing moving at a time." : "Start with one clear next step."}
+            </Text>
+            <Text style={styles.heroText}>
+              {featuredItem
+                ? "Your current focus stays at the top so the rest of the plan feels lighter."
+                : "Add a task or event and the focus queue will surface the next best thing to do."}
+            </Text>
+          </View>
+
+          <FeaturedPlannerCard
+            emptyDescription="Capture the next task or event and it will show up here with room to review details."
+            emptyTitle="Nothing selected yet"
+            item={featuredItem}
+            onDetailsPress={featuredItem ? () => openItem(featuredItem) : () => openNewItem("task")}
+            onNext={featuredIndex < liveQueue.length - 1 ? () => setFeaturedIndex((current) => current + 1) : undefined}
+            onPress={featuredItem ? () => openItem(featuredItem) : () => openNewItem("task")}
+            onPrev={featuredIndex > 0 ? () => setFeaturedIndex((current) => current - 1) : undefined}
+            queueLabel={liveQueue.length > 1 ? `${featuredIndex + 1} of ${liveQueue.length}` : undefined}
+            statusLabel={featuredItem?.status === "completed" ? "Finished" : undefined}
+            upcomingItems={upcomingFeaturedItems}
+          />
+
+          <View style={styles.primaryActions}>
+            <Button
+              onPress={() => openNewItem("task")}
+              style={styles.primaryActionButton}
+              textStyle={styles.primaryActionText}
+              title="New task"
             />
-            <MetricCard
-              label="Overdue"
-              tone="coral"
-              value={dashboard?.summary.overdueCount || 0}
+            <Button
+              onPress={() => openNewItem("event")}
+              style={styles.primaryActionButton}
+              textStyle={styles.primaryActionText}
+              title="New event"
+              variant="secondary"
             />
-            <MetricCard
-              label="Easy wins"
-              tone="mint"
-              value={dashboard?.summary.easyWinCount || 0}
+            <Button
+              onPress={() => router.push("/(app)/calendars")}
+              style={styles.primaryActionButton}
+              textStyle={styles.primaryActionText}
+              title="Open calendar"
+              variant="ghost"
             />
           </View>
-        </View>
+        </AnimatedScreenSection>
 
-        <View style={styles.panel}>
-          <View style={styles.panelHeader}>
-            <Text style={styles.panelTitle}>Quick capture</Text>
+        <AnimatedScreenSection delay={90} style={styles.bucketGrid}>
+          <FocusBucketCard
+            count={dashboard?.summary.todayCount || 0}
+            items={todayItems}
+            onPress={todayItems[0] ? () => openItem(todayItems[0]) : () => openNewItem("task")}
+            subtitle="Tasks and events that already belong to today."
+            title="Today"
+            tone="accent"
+          />
+          <FocusBucketCard
+            count={dashboard?.summary.overdueCount || 0}
+            items={overdueItems}
+            onPress={overdueItems[0] ? () => openItem(overdueItems[0]) : () => openNewItem("task")}
+            subtitle="Things that need a reset before they keep piling up."
+            title="Overdue"
+            tone="coral"
+          />
+          <FocusBucketCard
+            count={dashboard?.summary.easyWinCount || 0}
+            items={easyWinItems}
+            onPress={easyWinItems[0] ? () => openItem(easyWinItems[0]) : () => openNewItem("task")}
+            subtitle="Low-effort wins for rough attention days."
+            title="Easy wins"
+            tone="mint"
+          />
+        </AnimatedScreenSection>
+
+        <AnimatedScreenSection delay={140} style={styles.capturePanel}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionCopy}>
+              <Text style={styles.sectionEyebrow}>Quick capture</Text>
+              <Text style={styles.sectionTitle}>Add something before it disappears.</Text>
+            </View>
             <Button
               onPress={() =>
                 router.push({
-                  pathname: "/planner-item/new",
-                  params: {
-                    type: quickType,
-                    calendarId: selectedCalendarId ? String(selectedCalendarId) : "",
-                  },
+                  pathname: "/planner-item/[id]",
+                  params: buildNewItemParams(quickType, selectedCalendarId),
                 })
               }
               style={styles.inlineButton}
-              title="Open full editor"
-              variant="secondary"
+              textStyle={styles.inlineButtonText}
+              title="Full editor"
+              variant="ghost"
             />
           </View>
 
           <InputText
-            label="What do you need to remember?"
+            label="What needs your attention?"
             onChangeText={setQuickTitle}
-            placeholder="Essay outline, therapy homework, food shop, call Alex..."
+            placeholder="Essay outline, meds refill, project check-in, food shop..."
             value={quickTitle}
           />
 
@@ -259,15 +410,19 @@ export default function DashboardScreen() {
           <View style={styles.group}>
             <Text style={styles.groupLabel}>Calendar</Text>
             <View style={styles.chipRow}>
-              {calendars.map((calendar) => (
-                <Chip
-                  key={calendar.id}
-                  label={calendar.title}
-                  onPress={() => setSelectedCalendarId(calendar.id)}
-                  selected={selectedCalendarId === calendar.id}
-                  tone={calendar.is_owner ? "accent" : "amber"}
-                />
-              ))}
+              {activeCalendars.length ? (
+                activeCalendars.map((calendar) => (
+                  <Chip
+                    key={calendar.id}
+                    label={calendar.title}
+                    onPress={() => setSelectedCalendarId(calendar.id)}
+                    selected={selectedCalendarId === calendar.id}
+                    tone={calendar.is_owner ? "accent" : "amber"}
+                  />
+                ))
+              ) : (
+                <Chip label="No calendar yet" selected tone="neutral" />
+              )}
             </View>
           </View>
 
@@ -288,109 +443,82 @@ export default function DashboardScreen() {
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-          <Button
-            disabled={!quickTitle.trim()}
-            loading={saving}
-            onPress={handleQuickCreate}
-            title={quickType === "task" ? "Add task" : "Add event"}
-          />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Today</Text>
-          <Text style={styles.sectionSubtitle}>
-            Things already calling for your attention.
-          </Text>
-          <View style={styles.cardStack}>
-            {dashboard?.sections.today.length ? (
-              dashboard.sections.today.map((item) => (
-                <PlannerCard
-                  item={item}
-                  key={item.id}
-                  onPress={() => router.push(`/planner-item/${item.id}`)}
-                />
-              ))
-            ) : (
-              <Text style={styles.emptyText}>Nothing urgent today. Good place to slot one small win.</Text>
-            )}
+          <View style={styles.captureActions}>
+            <Button
+              disabled={!quickTitle.trim()}
+              loading={saving}
+              onPress={handleQuickCreate}
+              style={styles.captureButton}
+              title={quickType === "task" ? "Add task" : "Add event"}
+            />
+            <Button
+              onPress={() => openNewItem(quickType)}
+              style={styles.captureButton}
+              title="Open editor"
+              variant="secondary"
+            />
           </View>
-        </View>
+        </AnimatedScreenSection>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Next up</Text>
-          <Text style={styles.sectionSubtitle}>
-            The next 72 hours, sorted to keep the momentum going.
-          </Text>
-          <View style={styles.cardStack}>
-            {dashboard?.sections.nextUp.length ? (
-              dashboard.sections.nextUp.map((item) => (
-                <PlannerCard
-                  item={item}
-                  key={item.id}
-                  onPress={() => router.push(`/planner-item/${item.id}`)}
-                />
-              ))
-            ) : (
-              <Text style={styles.emptyText}>Your near-term queue is clear right now.</Text>
-            )}
-          </View>
-        </View>
-
-        <View style={styles.doubleSection}>
-          <View style={styles.miniSection}>
-            <Text style={styles.sectionTitle}>Overdue</Text>
-            <View style={styles.cardStack}>
-              {dashboard?.sections.overdue.length ? (
-                dashboard.sections.overdue.slice(0, 2).map((item) => (
-                  <PlannerCard
-                    item={item}
-                    key={item.id}
-                    onPress={() => router.push(`/planner-item/${item.id}`)}
-                  />
-                ))
-              ) : (
-                <Text style={styles.emptyText}>No overdue items.</Text>
-              )}
+        <AnimatedScreenSection delay={190} style={styles.sectionShell}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionCopy}>
+              <Text style={styles.sectionEyebrow}>Queue</Text>
+              <Text style={styles.sectionTitle}>Today and next up</Text>
             </View>
+            <Text style={styles.sectionHint}>
+              {(dashboard?.summary.todayCount || 0) + (dashboard?.summary.nextUpCount || 0)} active items
+            </Text>
           </View>
 
-          <View style={styles.miniSection}>
-            <Text style={styles.sectionTitle}>Easy wins</Text>
-            <View style={styles.cardStack}>
-              {dashboard?.sections.easyWins.length ? (
-                dashboard.sections.easyWins.slice(0, 2).map((item) => (
-                  <PlannerCard
-                    item={item}
-                    key={item.id}
-                    onPress={() => router.push(`/planner-item/${item.id}`)}
-                  />
-                ))
-              ) : (
-                <Text style={styles.emptyText}>Add a couple of low-effort wins for rough days.</Text>
-              )}
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Shared with you</Text>
-          <Text style={styles.sectionSubtitle}>
-            Group projects, friend plans, and accountability items in one lane.
-          </Text>
           <View style={styles.cardStack}>
-            {dashboard?.sections.shared.length ? (
-              dashboard.sections.shared.map((item) => (
-                <PlannerCard
-                  item={item}
-                  key={item.id}
-                  onPress={() => router.push(`/planner-item/${item.id}`)}
-                />
-              ))
-            ) : (
-              <Text style={styles.emptyText}>Nothing shared yet. Your friends tab is ready for it.</Text>
+            {todayItems.length ? todayItems.map((item) => (
+              <PlannerCard
+                item={item}
+                key={`today-${item.id}`}
+                onPress={() => openItem(item)}
+              />
+            )) : (
+              <Text style={styles.emptyText}>Nothing urgent today. Good time to add one clear win.</Text>
+            )}
+
+            {nextUpItems.length ? nextUpItems.map((item) => (
+              <PlannerCard
+                item={item}
+                key={`next-${item.id}`}
+                onPress={() => openItem(item)}
+              />
+            )) : null}
+          </View>
+        </AnimatedScreenSection>
+
+        <AnimatedScreenSection delay={240} style={styles.sectionShell}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionCopy}>
+              <Text style={styles.sectionEyebrow}>Shared</Text>
+              <Text style={styles.sectionTitle}>Plans involving other people</Text>
+            </View>
+            <Button
+              onPress={() => router.push("/(app)/friends")}
+              style={styles.inlineButton}
+              textStyle={styles.inlineButtonText}
+              title="Friends"
+              variant="ghost"
+            />
+          </View>
+
+          <View style={styles.cardStack}>
+            {sharedItems.length ? sharedItems.map((item) => (
+              <PlannerCard
+                item={item}
+                key={`shared-${item.id}`}
+                onPress={() => openItem(item)}
+              />
+            )) : (
+              <Text style={styles.emptyText}>Nothing shared yet. Add friends and shared events will appear here.</Text>
             )}
           </View>
-        </View>
+        </AnimatedScreenSection>
       </ScrollView>
     </SafeAreaView>
   );
@@ -401,57 +529,134 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  glowA: {
+    position: "absolute",
+    left: -110,
+    bottom: 160,
+    width: 240,
+    height: 240,
+    borderRadius: 999,
+    backgroundColor: "#8F6748",
+    opacity: 0.24,
+  },
+  glowB: {
+    position: "absolute",
+    right: -80,
+    top: 250,
+    width: 220,
+    height: 220,
+    borderRadius: 999,
+    backgroundColor: theme.colors.accent,
+    opacity: 0.18,
+  },
   content: {
     padding: 20,
-    gap: 18,
-    paddingBottom: 36,
+    gap: 20,
+    paddingBottom: 42,
   },
-  heroCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: 30,
-    padding: 22,
-    gap: 14,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+  heroSection: {
+    gap: 16,
   },
-  eyebrow: {
-    color: theme.colors.accent,
+  heroCopy: {
+    gap: 8,
+  },
+  heroEyebrow: {
+    color: theme.colors.accentHigh,
     fontSize: 12,
     fontWeight: "800",
+    letterSpacing: 1.1,
     textTransform: "uppercase",
-    letterSpacing: 0.8,
   },
-  title: {
+  heroTitle: {
     color: theme.colors.textPrimary,
     fontSize: 30,
     fontWeight: "800",
-    lineHeight: 38,
+    lineHeight: 36,
   },
-  subtitle: {
+  heroText: {
     color: theme.colors.textSecondary,
     lineHeight: 22,
   },
-  metricRow: {
+  primaryActions: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
   },
-  panel: {
-    backgroundColor: theme.colors.surfaceWarm,
+  primaryActionButton: {
+    flexGrow: 1,
+    flexBasis: "31%",
+    minWidth: 104,
+    borderRadius: 999,
+  },
+  primaryActionText: {
+    fontSize: 14,
+  },
+  bucketGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  capturePanel: {
+    backgroundColor: theme.colors.surface,
     borderRadius: 28,
     padding: 20,
     gap: 18,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: "#171A28",
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.18,
+    shadowRadius: 22,
+    elevation: 4,
   },
-  panelHeader: {
-    gap: 10,
+  sectionShell: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 28,
+    padding: 20,
+    gap: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: "#171A28",
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.18,
+    shadowRadius: 22,
+    elevation: 4,
   },
-  panelTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 22,
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+  },
+  sectionCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  sectionEyebrow: {
+    color: theme.colors.accentHigh,
+    fontSize: 12,
     fontWeight: "800",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  sectionTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 24,
+    fontWeight: "800",
+    lineHeight: 30,
+  },
+  sectionHint: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    fontWeight: "700",
   },
   inlineButton: {
-    alignSelf: "flex-start",
+    minHeight: 40,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+  },
+  inlineButtonText: {
+    fontSize: 13,
   },
   group: {
     gap: 10,
@@ -468,33 +673,25 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 10,
   },
-  section: {
+  captureActions: {
+    flexDirection: "row",
     gap: 10,
+    flexWrap: "wrap",
   },
-  doubleSection: {
-    gap: 18,
-  },
-  miniSection: {
-    gap: 10,
-  },
-  sectionTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 22,
-    fontWeight: "800",
-  },
-  sectionSubtitle: {
-    color: theme.colors.textSecondary,
-    lineHeight: 21,
+  captureButton: {
+    flex: 1,
+    minWidth: 140,
   },
   cardStack: {
     gap: 12,
   },
   emptyText: {
     color: theme.colors.textMuted,
-    lineHeight: 20,
+    lineHeight: 21,
   },
   errorText: {
-    color: theme.colors.coral,
+    color: theme.colors.coralHigh,
     fontWeight: "700",
+    lineHeight: 20,
   },
 });

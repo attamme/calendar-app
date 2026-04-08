@@ -10,6 +10,7 @@ router.get("/", checkToken, itemController.listItems);
 router.get("/:id", checkToken, itemController.getItem);
 router.post("/", checkToken, itemController.createItem);
 router.patch("/:id", checkToken, itemController.updateItem);
+router.patch("/:id/my-calendar", checkToken, itemController.setMyItemCalendar);
 router.post("/:id/share", checkToken, itemController.shareItem);
 
 module.exports = router;

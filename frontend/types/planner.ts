@@ -25,6 +25,7 @@ export type ItemShare = {
   item_id: number;
   user_id: number;
   permission: SharePermission;
+  target_calendar_id?: number | null;
   username: string;
   email: string;
 };
@@ -49,10 +50,16 @@ export type PlannerItem = {
   is_all_day: boolean;
   created_at: string;
   updated_at: string;
+  source_calendar_id?: number | null;
+  source_calendar_title?: string | null;
+  source_calendar_color?: string | null;
   calendar_title?: string | null;
   calendar_color?: string | null;
   owner_username?: string;
   is_owner: boolean;
+  is_direct_share?: boolean;
+  direct_share_permission?: SharePermission | null;
+  share_calendar_id?: number | null;
   reminders: Reminder[];
   shares: ItemShare[];
 };

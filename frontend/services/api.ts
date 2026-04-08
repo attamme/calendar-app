@@ -44,8 +44,12 @@ type RequestOptions = {
   token?: string | null;
 };
 
+const REQUEST_TIMEOUT_MS = 15000;
+
 async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const token = options.token ?? (await getToken());
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   let response: Response;
 
   try {
@@ -57,12 +61,17 @@ async function apiRequest<T>(path: string, options: RequestOptions = {}): Promis
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: options.body ? JSON.stringify(options.body) : undefined,
+      signal: controller.signal,
     });
   } catch (error) {
+    clearTimeout(timeoutId);
     throw new Error(
-      "Could not reach the planner server. Make sure the backend is running on port 3000 and the public tunnel is active."
+      error instanceof Error && error.name === "AbortError"
+        ? "The planner server took too long to respond. Check that the backend and tunnel are still running, then try again."
+        : "Could not reach the planner server. Make sure the backend is running on port 3000 and the public tunnel is active."
     );
   }
+  clearTimeout(timeoutId);
 
   const contentType = response.headers.get("content-type") || "";
   const payload = contentType.includes("application/json")
@@ -144,6 +153,18 @@ export async function shareItem(
       token,
     }
   );
+}
+
+export async function setMySharedItemCalendar(
+  id: number | string,
+  calendarId: number | null,
+  token?: string | null
+) {
+  return apiRequest<{ item: PlannerItem }>(`/items/${id}/my-calendar`, {
+    method: "PATCH",
+    body: { calendarId },
+    token,
+  });
 }
 
 export async function fetchCalendars(token?: string | null) {

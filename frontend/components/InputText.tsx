@@ -13,7 +13,7 @@ import EyeOpen from "@/assets/svg/eye_open.svg";
 import { theme } from "@/theme/tokens";
 
 type Props = {
-  label: string;
+  label?: string;
   placeholder: string;
   value?: string;
   secure?: boolean;
@@ -21,6 +21,8 @@ type Props = {
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
   keyboardType?: KeyboardTypeOptions;
   onChangeText?: (text: string) => void;
+  variant?: "default" | "figma";
+  hideLabel?: boolean;
 };
 
 export default function InputText({
@@ -32,15 +34,28 @@ export default function InputText({
   autoCapitalize = "sentences",
   keyboardType = "default",
   onChangeText,
+  variant = "default",
+  hideLabel = false,
 }: Props) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const showEye = Boolean(secure);
   const EyeIcon = isPasswordVisible ? EyeOpen : EyeClosed;
+  const palette = variant === "figma" ? figmaPalette : defaultPalette;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
-      <View style={[styles.inputContainer, multiline ? styles.multilineContainer : null]}>
+      {label && !hideLabel ? <Text style={[styles.label, { color: palette.label }]}>{label}</Text> : null}
+      <View
+        style={[
+          styles.inputContainer,
+          multiline ? styles.multilineContainer : null,
+          {
+            backgroundColor: palette.background,
+            borderColor: palette.borderColor,
+            borderWidth: palette.borderWidth,
+          },
+        ]}
+      >
         <TextInput
           autoCapitalize={autoCapitalize}
           keyboardType={keyboardType}
@@ -48,9 +63,13 @@ export default function InputText({
           numberOfLines={multiline ? 4 : 1}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={theme.colors.textMuted}
+          placeholderTextColor={palette.placeholder}
           secureTextEntry={secure ? !isPasswordVisible : false}
-          style={[styles.input, multiline ? styles.multilineInput : null]}
+          style={[
+            styles.input,
+            multiline ? styles.multilineInput : null,
+            { color: palette.text },
+          ]}
           value={value}
         />
         {showEye ? (
@@ -105,3 +124,21 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
 });
+
+const defaultPalette = {
+  label: theme.colors.textSecondary,
+  background: theme.colors.surfaceMuted,
+  borderColor: theme.colors.border,
+  borderWidth: 1,
+  text: theme.colors.textPrimary,
+  placeholder: theme.colors.textMuted,
+} as const;
+
+const figmaPalette = {
+  label: theme.colors.figmaText,
+  background: theme.colors.figmaSurfaceAlt,
+  borderColor: theme.colors.border,
+  borderWidth: 1,
+  text: theme.colors.figmaText,
+  placeholder: theme.colors.figmaSubtext,
+} as const;

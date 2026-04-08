@@ -32,11 +32,13 @@ export default function Login() {
 
   return (
     <ScreenShell
+      showBackButton
       title="Welcome back"
       subtitle="Jump straight into today, easy wins, and the reminders that keep your plans visible."
+      tone="figma"
       footer={
         <View style={styles.footer}>
-          <Button loading={loading} onPress={handleLogin} title="Log in" />
+          <Button loading={loading} onPress={handleLogin} style={styles.primaryButton} title="Log in" />
           <Pressable onPress={() => router.replace("/(auth)/register")}>
             <Text style={styles.link}>Need an account? Register instead.</Text>
           </Pressable>
@@ -46,18 +48,20 @@ export default function Login() {
       <View style={styles.formCard}>
         <InputText
           autoCapitalize="none"
+          hideLabel
           keyboardType="email-address"
-          label="Email"
           onChangeText={setEmail}
-          placeholder="you@example.com"
+          placeholder="Email"
+          variant="figma"
           value={email}
         />
         <InputText
           autoCapitalize="none"
-          label="Password"
+          hideLabel
           onChangeText={setPassword}
-          placeholder="At least 6 characters"
+          placeholder="Password"
           secure
+          variant="figma"
           value={password}
         />
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -68,23 +72,22 @@ export default function Login() {
 
 const styles = StyleSheet.create({
   formCard: {
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 26,
-    padding: 20,
     gap: 18,
+  },
+  primaryButton: {
+    backgroundColor: theme.colors.figmaAccent,
+    borderColor: theme.colors.figmaAccent,
   },
   footer: {
     gap: 12,
   },
   link: {
-    color: theme.colors.accent,
+    color: theme.colors.figmaSubtext,
     textAlign: "center",
     fontWeight: "700",
   },
   errorText: {
-    color: theme.colors.coral,
+    color: "#FFB4B4",
     fontWeight: "700",
   },
 });

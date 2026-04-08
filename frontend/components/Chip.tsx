@@ -27,7 +27,7 @@ export default function Chip({
       style={[
         styles.base,
         {
-          backgroundColor: selected ? palette.background : theme.colors.surface,
+          backgroundColor: selected ? palette.background : theme.colors.surfaceWarm,
           borderColor: selected ? palette.border : theme.colors.border,
         },
       ]}
@@ -35,7 +35,7 @@ export default function Chip({
       <Text
         style={[
           styles.label,
-          { color: selected ? palette.text : theme.colors.textSecondary },
+          { color: selected ? palette.text : theme.colors.textPrimary },
         ]}
       >
         {label}
@@ -47,24 +47,24 @@ export default function Chip({
 
 const palettes = {
   accent: {
-    background: theme.colors.accentSoft,
-    border: theme.colors.accent,
-    text: theme.colors.accent,
+    background: "#5B5AA0",
+    border: theme.colors.accentHigh,
+    text: theme.colors.textPrimary,
   },
   mint: {
-    background: theme.colors.mintSoft,
-    border: theme.colors.mint,
-    text: theme.colors.mint,
+    background: "#557668",
+    border: theme.colors.mintHigh,
+    text: theme.colors.textPrimary,
   },
   amber: {
-    background: theme.colors.amberSoft,
-    border: theme.colors.amber,
-    text: "#8C6400",
+    background: "#7B6746",
+    border: theme.colors.amberHigh,
+    text: theme.colors.textPrimary,
   },
   coral: {
-    background: theme.colors.coralSoft,
-    border: theme.colors.coral,
-    text: theme.colors.coral,
+    background: "#825861",
+    border: theme.colors.coralHigh,
+    text: theme.colors.textPrimary,
   },
   neutral: {
     background: theme.colors.surfaceMuted,
@@ -82,6 +82,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    shadowColor: "#171A28",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 1,
   },
   label: {
     fontSize: 13,

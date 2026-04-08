@@ -216,27 +216,27 @@ function filterItemsByView(items, view) {
 }
 
 function buildDashboard(items) {
-  const today = smartSort(filterItemsByView(items, "today")).slice(0, 6);
-  const nextUp = smartSort(filterItemsByView(items, "next_up")).slice(0, 6);
-  const overdue = smartSort(filterItemsByView(items, "overdue")).slice(0, 6);
-  const easyWins = smartSort(filterItemsByView(items, "easy_win")).slice(0, 6);
-  const shared = smartSort(filterItemsByView(items, "shared")).slice(0, 6);
+  const todayAll = smartSort(filterItemsByView(items, "today"));
+  const nextUpAll = smartSort(filterItemsByView(items, "next_up"));
+  const overdueAll = smartSort(filterItemsByView(items, "overdue"));
+  const easyWinsAll = smartSort(filterItemsByView(items, "easy_win"));
+  const sharedAll = smartSort(filterItemsByView(items, "shared"));
 
   return {
     summary: {
-      todayCount: today.length,
-      nextUpCount: nextUp.length,
-      overdueCount: overdue.length,
-      easyWinCount: easyWins.length,
-      sharedCount: shared.length,
+      todayCount: todayAll.length,
+      nextUpCount: nextUpAll.length,
+      overdueCount: overdueAll.length,
+      easyWinCount: easyWinsAll.length,
+      sharedCount: sharedAll.length,
       completedCount: filterItemsByView(items, "completed").length,
     },
     sections: {
-      today,
-      nextUp,
-      overdue,
-      easyWins,
-      shared,
+      today: todayAll.slice(0, 6),
+      nextUp: nextUpAll.slice(0, 6),
+      overdue: overdueAll.slice(0, 6),
+      easyWins: easyWinsAll.slice(0, 6),
+      shared: sharedAll.slice(0, 6),
     },
   };
 }

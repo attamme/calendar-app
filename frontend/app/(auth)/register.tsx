@@ -39,11 +39,18 @@ export default function Register() {
 
   return (
     <ScreenShell
+      showBackButton
       title="Create your planner space"
       subtitle="Start with your own calendars, then add classes, routines, reminders, and friends when you are ready."
+      tone="figma"
       footer={
         <View style={styles.footer}>
-          <Button loading={loading} onPress={handleRegister} title="Create account" />
+          <Button
+            loading={loading}
+            onPress={handleRegister}
+            style={styles.primaryButton}
+            title="Create account"
+          />
           <Pressable onPress={() => router.replace("/(auth)/login")}>
             <Text style={styles.link}>Already have an account? Log in.</Text>
           </Pressable>
@@ -53,33 +60,37 @@ export default function Register() {
       <View style={styles.formCard}>
         <InputText
           autoCapitalize="none"
-          label="Username"
+          hideLabel
           onChangeText={setUsername}
-          placeholder="focus-friend"
+          placeholder="Username"
+          variant="figma"
           value={username}
         />
         <InputText
           autoCapitalize="none"
+          hideLabel
           keyboardType="email-address"
-          label="Email"
           onChangeText={setEmail}
-          placeholder="you@example.com"
+          placeholder="Email"
+          variant="figma"
           value={email}
         />
         <InputText
           autoCapitalize="none"
-          label="Password"
+          hideLabel
           onChangeText={setPassword}
-          placeholder="At least 6 characters"
+          placeholder="Password"
           secure
+          variant="figma"
           value={password}
         />
         <InputText
           autoCapitalize="none"
-          label="Repeat password"
+          hideLabel
           onChangeText={setConfirmPassword}
-          placeholder="Repeat your password"
+          placeholder="Repeat password"
           secure
+          variant="figma"
           value={confirmPassword}
         />
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -90,23 +101,22 @@ export default function Register() {
 
 const styles = StyleSheet.create({
   formCard: {
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 26,
-    padding: 20,
     gap: 18,
+  },
+  primaryButton: {
+    backgroundColor: theme.colors.figmaAccent,
+    borderColor: theme.colors.figmaAccent,
   },
   footer: {
     gap: 12,
   },
   link: {
-    color: theme.colors.accent,
+    color: theme.colors.figmaSubtext,
     textAlign: "center",
     fontWeight: "700",
   },
   errorText: {
-    color: theme.colors.coral,
+    color: "#FFB4B4",
     fontWeight: "700",
   },
 });
