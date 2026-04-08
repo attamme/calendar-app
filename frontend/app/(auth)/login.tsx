@@ -4,32 +4,22 @@ import InputText from "@/components/InputText";
 import Button from "@/components/button";
 import { styles } from "@/styles/login";
 import { router } from "expo-router";
-
+import login from "@/services/authLogin";
 export default function Login() {
 
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
 
-    async function handleLogin() {
-        try {
-            const res = await fetch("http://localhost:3000/users/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    email: email,
-                    password: password
-                })
-            })
-            
-            const data = await res.json()
-
-            console.log("Login successful:", data);
-        } catch (error) {
-            console.error("Login failed:", error);
-        }
+    function handleLogin() {
+        console.log("Logging in with", email, password)
+        login(email, password).then(() => {
+            router.navigate("/home")
+        }).catch((err) => {
+            console.error(err)
+        })
     }
+
+
 
     return (
        < KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
@@ -41,7 +31,7 @@ export default function Login() {
                     <InputText label="Password" placeholder="***********" secure value={password} onChangeText={setPassword} />
                     <View style={styles.buttonContainer}>
                         <Button title="Register" onPress={ () => router.navigate("/register")}/>
-                        <Button title="Login" onPress={ () => alert("You are trying to login")}/>
+                        <Button title="Login" onPress={ () => handleLogin()}/>
                     </View>
                     <Text style={[styles.link, { textAlign: "right" }]}>Login as a guest</Text>
                     <Text style={[styles.link, { textDecorationLine: "underline" }]}>Terms of service</Text>
