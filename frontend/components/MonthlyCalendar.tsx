@@ -37,7 +37,10 @@ const ESTONIAN_MONTHS = [
 ];
 
 const WEEKEND_DAY_LABELS = new Set(["Sat", "Sun"]);
+const CALENDAR_HORIZONTAL_PADDING = 10;
+const WEEK_ROW_HORIZONTAL_PADDING = 10;
 const COLUMN_GAP = 10;
+const FIGMA_DAY_CELL_SIZE = 41.85714340209961;
 
 function chunkDays(days: number[], chunkSize: number) {
     const rows: number[][] = [];
@@ -59,51 +62,75 @@ function padWeek(week: number[], totalColumns: number) {
     return padded;
 }
 
-function getDaysInMonth(date: Date) {
+export function getDaysInMonth(date: Date) {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 }
 
-function getMonthLabel(date: Date) {
+export function getMonthLabel(date: Date) {
     return ESTONIAN_MONTHS[date.getMonth()];
 }
 
-function addMonths(date: Date, offset: number) {
+export function addMonths(date: Date, offset: number) {
     return new Date(date.getFullYear(), date.getMonth() + offset, 1);
+}
+
+export function clampDayToMonth(day: number, date: Date) {
+    return Math.min(day, getDaysInMonth(date));
+}
+
+export function getMonthOffsetFromGesture(dx: number) {
+    if (dx <= -40) {
+        return 1;
+    }
+
+    if (dx >= 40) {
+        return -1;
+    }
+
+    return 0;
+}
+
+export function createCalendarRows(date: Date, columnCount: number) {
+    const days = Array.from({ length: getDaysInMonth(date) }, (_, index) => index + 1);
+    return chunkDays(days, columnCount);
 }
 
 export default function MonthlyCalendar({
     initialDate = new Date(),
     weekdays = DEFAULT_WEEKDAYS,
-    events = [],
     onDayPress,
     onMonthChange,
 }: Props) {
     const [visibleMonth, setVisibleMonth] = useState(() => new Date(initialDate.getFullYear(), initialDate.getMonth(), 1));
-    const [selectedDay, setSelectedDay] = useState(() => initialDate.getDate());
+    const [selectedDay, setSelectedDay] = useState(() => clampDayToMonth(initialDate.getDate(), initialDate));
     const [contentWidth, setContentWidth] = useState(0);
 
     const visibleMonthRef = useRef(visibleMonth);
     visibleMonthRef.current = visibleMonth;
 
     const dayRows = useMemo(() => {
-        const days = Array.from({ length: getDaysInMonth(visibleMonth) }, (_, index) => index + 1);
-        return chunkDays(days, weekdays.length);
+        return createCalendarRows(visibleMonth, weekdays.length);
     }, [visibleMonth, weekdays.length]);
 
     const cellSize = useMemo(() => {
         if (!contentWidth) {
-            return 41.85714340209961;
+            return FIGMA_DAY_CELL_SIZE;
         }
 
-        return Math.max((contentWidth - 80) / 7, 24);
-    }, [contentWidth]);
+        const availableWidth =
+            contentWidth -
+            CALENDAR_HORIZONTAL_PADDING * 2 -
+            WEEK_ROW_HORIZONTAL_PADDING * 2 -
+            COLUMN_GAP * (weekdays.length - 1);
+
+        return Math.max(availableWidth / weekdays.length, 24);
+    }, [contentWidth, weekdays.length]);
 
     const navigateMonth = useCallback((offset: number) => {
         const nextMonth = addMonths(visibleMonthRef.current, offset);
-        const nextDaysInMonth = getDaysInMonth(nextMonth);
 
         setVisibleMonth(nextMonth);
-        setSelectedDay((currentDay) => Math.min(currentDay, nextDaysInMonth));
+        setSelectedDay((currentDay) => clampDayToMonth(currentDay, nextMonth));
         onMonthChange?.(nextMonth);
     }, [onMonthChange]);
 
@@ -113,10 +140,10 @@ export default function MonthlyCalendar({
                 onMoveShouldSetPanResponder: (_, gestureState) =>
                     Math.abs(gestureState.dx) > 24 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy),
                 onPanResponderRelease: (_, gestureState) => {
-                    if (gestureState.dx <= -40) {
-                        navigateMonth(1);
-                    } else if (gestureState.dx >= 40) {
-                        navigateMonth(-1);
+                    const monthOffset = getMonthOffsetFromGesture(gestureState.dx);
+
+                    if (monthOffset !== 0) {
+                        navigateMonth(monthOffset);
                     }
                 },
             }),
@@ -131,15 +158,19 @@ export default function MonthlyCalendar({
     return (
         <View
             style={styles.calendar}
+            testID="monthly-calendar"
             {...panResponder.panHandlers}
             onLayout={(event) => setContentWidth(event.nativeEvent.layout.width)}
         >
-            <Text style={styles.monthLabel}>{getMonthLabel(visibleMonth)}</Text>
+            <Text style={styles.monthLabel} testID="month-label">
+                {getMonthLabel(visibleMonth)}
+            </Text>
 
             <View style={styles.weekdaysRow}>
                 {weekdays.map((weekday, index) => (
                     <View key={`${weekday}-${index}`} style={styles.weekdayCell}>
                         <Text
+                            testID={`weekday-${index}`}
                             style={[
                                 styles.weekdayText,
                                 WEEKEND_DAY_LABELS.has(weekday) && styles.weekendText,
@@ -166,7 +197,9 @@ export default function MonthlyCalendar({
                                 key={day}
                                 accessibilityRole="button"
                                 accessibilityLabel={`Select day ${day}`}
+                                accessibilityState={{ selected: isSelected }}
                                 onPress={() => handleDayPress(day)}
+                                testID={`calendar-day-${day}`}
                                 style={({ pressed }) => [
                                     styles.dayCell,
                                     { width: cellSize, height: cellSize },
@@ -179,41 +212,6 @@ export default function MonthlyCalendar({
                             </Pressable>
                         );
                     })}
-
-                    <View pointerEvents="none" style={styles.eventLayer}>
-                        {events
-                            .filter((event) => event.weekIndex === weekIndex)
-                            .map((event) => {
-                                const left = (event.startDay - 1) * (cellSize + COLUMN_GAP);
-                                const width = (event.endDay - event.startDay + 1) * cellSize + Math.max(event.endDay - event.startDay, 0) * COLUMN_GAP;
-
-                                return (
-                                    <View
-                                        key={event.id}
-                                        style={[
-                                            styles.eventBar,
-                                            {
-                                                left,
-                                                width,
-                                                backgroundColor: event.color,
-                                            },
-                                        ]}
-                                    >
-                                        {!!event.label && (
-                                            <Text
-                                                style={[
-                                                    styles.eventLabel,
-                                                    { color: event.textColor ?? "#FFFFFF" },
-                                                ]}
-                                                numberOfLines={1}
-                                            >
-                                                {event.label}
-                                            </Text>
-                                        )}
-                                    </View>
-                                );
-                            })}
-                    </View>
                 </View>
             ))}
         </View>
