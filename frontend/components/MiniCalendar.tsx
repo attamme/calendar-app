@@ -1,12 +1,21 @@
+import { ReactNode } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
 import { Href, useRouter } from "expo-router";
 import { styles } from "@/styles/mini_calendar";
 import { colors } from "@/styles/colors";
 
+const CELL_POSITIONS = [
+    { top: 29, left: 10 },
+    { top: 29, left: 52 },
+    { top: 69, left: 10 },
+    { top: 69, left: 52 },
+] as const;
+
 type Props = {
     label: string;
     destination?: Href;
     strokeColor?: string;
+    cellIcons?: ReactNode[];
     onPress?: (label: string) => void;
 };
 
@@ -14,6 +23,7 @@ export default function MiniCalendar({
     label,
     destination,
     strokeColor = colors.link,
+    cellIcons = [],
     onPress,
 }: Props) {
     const router = useRouter();
@@ -39,11 +49,12 @@ export default function MiniCalendar({
             onPress={handlePress}
             style={({ pressed }) => [styles.calendar, pressed && styles.calendarPressed]}
         >
-            <View style={[styles.calendarChild, { borderColor: strokeColor }]} />
-            <View style={[styles.calendarItem, styles.container]} />
-            <View style={[styles.calendarInner, styles.container]} />
-            <View style={[styles.rectangleView, styles.view]} />
-            <View style={[styles.calendarChild2, styles.view]} />
+            <View style={[styles.calendarFrame, { borderColor: strokeColor }]} />
+            {CELL_POSITIONS.map((position, index) => (
+                <View key={`${label}-${index}`} style={[styles.cell, position]}>
+                    {cellIcons[index]}
+                </View>
+            ))}
             <Text style={styles.name}>{label}</Text>
         </Pressable>
     );
