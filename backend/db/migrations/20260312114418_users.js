@@ -8,6 +8,7 @@ exports.up = async function(knex) {
     t.increments("id").primary();
     t.text("username").notNullable();
     t.text("password").notNullable();
+    t.text("email").notNullable();
     t.boolean("isAdmin").defaultTo(false);
   })
 };
