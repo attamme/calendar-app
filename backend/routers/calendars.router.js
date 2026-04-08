@@ -9,6 +9,7 @@ const checkToken = require("../middleware/check_token").checkToken
     router.post("/add-friend", checkToken, calController.addFriend)
     router.get("/show-mine", checkToken, calController.showMyCalendars)
     router.get("/friends", calController.getFriends)
+    router.post("/get-events", checkToken, calController.getEventsFromCalendar)
 
 module.exports = router;
 

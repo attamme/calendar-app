@@ -71,4 +71,26 @@ async function create(req, res){
     }
 }
 
-module.exports = {getAll, addFriend, create, getFriends, showMyCalendars} 
+async function getEventsFromCalendar(req, res) {
+    try {
+        const connection = await knex("calendar_users")
+            .where("user_id", req.token.sub)
+            .andWhere("calendar_id", req.body.calendar_id)
+            .first();
+
+        if (!connection) {
+            return res.status(403).json("You do not have access to this calendar");
+        }
+
+        const events = await knex("events")
+            .select("*")
+            .where("calendar_id", connection.calendar_id);
+            
+        res.json(events);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("something went wrong getting info");
+    }
+}
+
+module.exports = {getAll, addFriend, create, getFriends, showMyCalendars, getEventsFromCalendar} 
