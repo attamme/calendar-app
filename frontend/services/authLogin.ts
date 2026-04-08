@@ -1,19 +1,24 @@
-import { saveToken } from "../services/authStorage";
+import { saveToken } from "@/services/authStorage";
+import {API_URL} from "@/app/config.json";
 
-async function login(username: string, password: string) {
-  const res = await fetch("http://your-api/login", {
+export default async function login(email: string, password: string) {
+  console.log(API_URL + "/users/login")
+  const res = await fetch(`${API_URL}/users/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "69",
+      
     },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ email, password }),
   });
-
-  const token = await res.json();
-
+  console.log(res);
   if (!res.ok) {
     throw new Error("Login failed");
   }
+
+  const token = await res.json();
+
 
   await saveToken(token);
 }
