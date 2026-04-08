@@ -19,7 +19,7 @@ export const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "rgba(213, 208, 255, 0.22)",
         overflow: "hidden",
-        gap: 14,
+        gap: 12,
     },
     cornerAccent: {
         position: "absolute",
@@ -34,7 +34,9 @@ export const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingLeft: 6,
+        paddingLeft: 40,
+        paddingRight: 4,
+        marginBottom: 4,
     },
     title: {
         color: colors.text,
@@ -55,6 +57,35 @@ export const styles = StyleSheet.create({
     },
     priorityPillMuted: {
         backgroundColor: "rgba(255, 255, 255, 0.14)",
+    },
+    taskPagerRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingHorizontal: 8,
+    },
+    taskPagerPills: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        flexShrink: 1,
+    },
+    taskPagerPill: {
+        height: 7,
+        borderRadius: 999,
+    },
+    taskPagerPillActive: {
+        width: 24,
+    },
+    taskPagerPillMuted: {
+        width: 10,
+        backgroundColor: "rgba(255, 255, 255, 0.22)",
+    },
+    taskPagerText: {
+        color: "rgba(238, 238, 238, 0.7)",
+        fontSize: 12,
+        fontWeight: "600",
+        letterSpacing: 0.2,
     },
     contentRow: {
         flexDirection: "row",
@@ -88,7 +119,7 @@ export const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "space-between",
         gap: 12,
-        paddingTop: 2,
+        paddingTop: 4,
     },
     helperRow: {
         flexDirection: "row",
@@ -109,7 +140,7 @@ export const styles = StyleSheet.create({
         alignItems: "center",
     },
     doneButtonCompleted: {
-        backgroundColor: "rgba(89, 77, 200, 0.88)",
+        backgroundColor: "rgba(89, 77, 200, 0.95)",
     },
     doneButtonText: {
         color: colors.text,
