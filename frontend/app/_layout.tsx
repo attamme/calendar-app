@@ -4,7 +4,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { ActivityIndicator, View } from "react-native";
 import { SessionProvider, useSession } from "@/services/session";
-import { typography } from "@/styles/tokens";
+import { colors, typography } from "@/styles/tokens";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -18,10 +18,10 @@ function RootNavigator() {
           flex: 1,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#FFFFFF",
+          backgroundColor: colors.background,
         }}
       >
-        <ActivityIndicator size="small" color="#6A6A6A" />
+        <ActivityIndicator size="small" color={colors.textSecondary} />
       </View>
     );
   }

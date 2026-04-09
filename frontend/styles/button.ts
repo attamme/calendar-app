@@ -10,7 +10,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   primary: {
-    backgroundColor: colors.actionNeutral,
+    backgroundColor: colors.accent,
   },
   secondary: {
     backgroundColor: colors.actionNeutral,

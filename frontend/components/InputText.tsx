@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { ElementType, createElement, useMemo, useState } from "react";
 import { KeyboardTypeOptions, Pressable, Text, TextInput, TextInputProps, View } from "react-native";
 import EyeClosed from "@/assets/svg/eye_closed.svg";
 import EyeOpen from "@/assets/svg/eye_open.svg";
+import { colors } from "@/styles/tokens";
 import { styles } from "@/styles/input_text";
 
 type Props = {
@@ -13,6 +14,7 @@ type Props = {
   keyboardType?: KeyboardTypeOptions;
   autoCapitalize?: TextInputProps["autoCapitalize"];
   labelHidden?: boolean;
+  testID?: string;
 };
 
 export default function InputText({
@@ -24,18 +26,36 @@ export default function InputText({
   keyboardType,
   autoCapitalize,
   labelHidden,
+  testID,
 }: Props) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const showEye = Boolean(secure);
   const secureTextEntry = secure ? !isPasswordVisible : false;
 
+  function resolveIconComponent(icon: unknown): ElementType | null {
+    if (typeof icon === "function" || typeof icon === "string") {
+      return icon as ElementType;
+    }
+
+    if (
+      icon &&
+      typeof icon === "object" &&
+      "default" in icon &&
+      (typeof icon.default === "function" || typeof icon.default === "string")
+    ) {
+      return icon.default as ElementType;
+    }
+
+    return null;
+  }
+
   const EyeIcon = useMemo(() => {
     if (!showEye) {
       return null;
     }
 
-    return isPasswordVisible ? EyeOpen : EyeClosed;
+    return resolveIconComponent(isPasswordVisible ? EyeOpen : EyeClosed);
   }, [isPasswordVisible, showEye]);
 
   return (
@@ -48,14 +68,15 @@ export default function InputText({
           keyboardType={keyboardType}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="#9D9D9D"
+          placeholderTextColor={colors.textMuted}
           secureTextEntry={secureTextEntry}
           style={styles.input}
+          testID={testID}
           value={value}
         />
         {showEye && EyeIcon ? (
           <Pressable onPress={() => setIsPasswordVisible((visible) => !visible)}>
-            <EyeIcon style={styles.eye} />
+            {createElement(EyeIcon, { style: styles.eye })}
           </Pressable>
         ) : null}
       </View>

@@ -1,4 +1,4 @@
-import { API_URL } from "@/services/api";
+import { API_URL, createApiHeaders } from "@/services/api";
 import { StoredSession } from "@/services/authStorage";
 
 type LoginResponse = string | { token: string; user?: { id?: number; username?: string; email?: string } };
@@ -19,14 +19,17 @@ async function readErrorMessage(response: Response) {
 }
 
 export default async function login(email: string, password: string) {
-  const response = await fetch(`${API_URL}/users/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "ngrok-skip-browser-warning": "69",
-    },
-    body: JSON.stringify({ email, password }),
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_URL}/users/login`, {
+      method: "POST",
+      headers: createApiHeaders(),
+      body: JSON.stringify({ email, password }),
+    });
+  } catch {
+    throw new Error(`Could not reach the backend at ${API_URL}.`);
+  }
 
   if (!response.ok) {
     const message = await readErrorMessage(response);

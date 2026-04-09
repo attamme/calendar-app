@@ -1,6 +1,7 @@
 import { ActivityIndicator, View } from "react-native";
 import { Redirect } from "expo-router";
 import { useSession } from "@/services/session";
+import { colors } from "@/styles/tokens";
 
 export default function Index() {
   const { isHydrated, status } = useSession();
@@ -12,10 +13,10 @@ export default function Index() {
           flex: 1,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#FFFFFF",
+          backgroundColor: colors.background,
         }}
       >
-        <ActivityIndicator size="small" color="#6A6A6A" />
+        <ActivityIndicator size="small" color={colors.textSecondary} />
       </View>
     );
   }

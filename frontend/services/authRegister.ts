@@ -1,4 +1,4 @@
-import { API_URL } from "@/services/api";
+import { API_URL, createApiHeaders } from "@/services/api";
 
 type RegisterPayload = {
   username: string;
@@ -22,14 +22,17 @@ async function readErrorMessage(response: Response) {
 }
 
 export default async function registerUser(payload: RegisterPayload) {
-  const response = await fetch(`${API_URL}/users/create`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "ngrok-skip-browser-warning": "69",
-    },
-    body: JSON.stringify(payload),
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_URL}/users/create`, {
+      method: "POST",
+      headers: createApiHeaders(),
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    throw new Error(`Could not reach the backend at ${API_URL}.`);
+  }
 
   if (!response.ok) {
     const message = await readErrorMessage(response);

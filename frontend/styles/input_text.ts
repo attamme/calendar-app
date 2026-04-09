@@ -3,7 +3,7 @@ import { colors, radius, typography } from "@/styles/tokens";
 
 export const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   label: {
     color: colors.textSecondary,
@@ -13,7 +13,7 @@ export const styles = StyleSheet.create({
   },
   inputContainer: {
     minHeight: 48,
-    borderRadius: radius.pill,
+    borderRadius: radius.input,
     backgroundColor: colors.surfaceMuted,
     paddingRight: 16,
     flexDirection: "row",
@@ -23,13 +23,13 @@ export const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 18,
     paddingVertical: 14,
-    fontSize: typography.size.body,
-    color: colors.textPrimary,
+    fontSize: 15,
+    color: colors.textSecondary,
     fontFamily: typography.fontFamily.inter,
   },
   eye: {
     width: 20,
     height: 20,
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
 });

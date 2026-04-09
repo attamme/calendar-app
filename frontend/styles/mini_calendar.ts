@@ -46,10 +46,10 @@ export const styles = StyleSheet.create({
     borderWidth: 2,
   },
   dashboardFrame: {
-    backgroundColor: colors.homeTile,
+    backgroundColor: colors.homeCard,
   },
   dashboardFrameSelected: {
-    backgroundColor: colors.homeCard,
+    backgroundColor: colors.homeTile,
   },
   name: {
     top: 0,
@@ -66,6 +66,6 @@ export const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   dashboardName: {
-    color: colors.textPrimary,
+    color: colors.textSecondary,
   },
 });

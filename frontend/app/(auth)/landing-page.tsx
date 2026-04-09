@@ -11,9 +11,11 @@ export default function Landing() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
+      <View pointerEvents="none" style={styles.backgroundOrbLarge} />
+      <View pointerEvents="none" style={styles.backgroundOrbSmall} />
 
-      <Logo />
+      <Logo onPress={() => router.replace("/landing-page")} testID="landing-logo-button" />
 
       <View style={styles.content}>
         <View>
@@ -21,7 +23,10 @@ export default function Landing() {
           <Text style={styles.subtitle}>We can help you with that!</Text>
         </View>
 
-        <Image source={LandingPhoto} style={styles.heroImage} />
+        <View style={styles.heroCard}>
+          <Image source={LandingPhoto} style={styles.heroImage} />
+          <View style={styles.heroOverlay} />
+        </View>
 
         <View>
           <Text style={styles.sectionTitle}>Join us here!</Text>

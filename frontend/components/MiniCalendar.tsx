@@ -19,6 +19,7 @@ type Props = {
   onPress?: (label: string) => void;
   variant?: "default" | "dashboard";
   selected?: boolean;
+  testID?: string;
 };
 
 export default function MiniCalendar({
@@ -29,6 +30,7 @@ export default function MiniCalendar({
   onPress,
   variant = "default",
   selected = false,
+  testID,
 }: Props) {
   const router = useRouter();
   const isDashboard = variant === "dashboard";
@@ -52,6 +54,7 @@ export default function MiniCalendar({
       accessibilityRole="button"
       accessibilityLabel={`Open ${label} calendar`}
       onPress={handlePress}
+      testID={testID}
       style={({ pressed }) => [
         styles.calendar,
         isDashboard && styles.dashboardCalendar,
@@ -65,6 +68,7 @@ export default function MiniCalendar({
           !isDashboard && { borderColor: strokeColor },
           selected && isDashboard && styles.dashboardFrameSelected,
         ]}
+        testID={testID ? `${testID}-frame` : undefined}
       />
       {CELL_POSITIONS.map((position, index) => (
         <View
