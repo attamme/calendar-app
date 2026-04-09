@@ -60,6 +60,21 @@ export const styles = StyleSheet.create({
         alignItems: "center",
         position: "relative",
     },
+    eventBar: {
+        position: "absolute",
+        height: 18,
+        bottom: 10,
+        borderTopRightRadius: 10,
+        borderBottomRightRadius: 10,
+        justifyContent: "center",
+        paddingHorizontal: 8,
+    },
+    eventLabel: {
+        color: colors.text,
+        fontSize: 13,
+        lineHeight: 16,
+        fontFamily: "Inter-Regular",
+    },
     dayCell: {
         backgroundColor: colors.third,
         borderRadius: 3,

@@ -98,6 +98,7 @@ export function createCalendarRows(date: Date, columnCount: number) {
 export default function MonthlyCalendar({
     initialDate = new Date(),
     weekdays = DEFAULT_WEEKDAYS,
+    events = [],
     onDayPress,
     onMonthChange,
 }: Props) {
@@ -212,6 +213,43 @@ export default function MonthlyCalendar({
                             </Pressable>
                         );
                     })}
+
+                    {events
+                        .filter((event) => event.weekIndex === weekIndex)
+                        .map((event) => {
+                            const startColumn = Math.max(event.startDay - 1, 0);
+                            const endColumn = Math.min(event.endDay - 1, weekdays.length - 1);
+                            const left =
+                                WEEK_ROW_HORIZONTAL_PADDING + startColumn * (cellSize + COLUMN_GAP);
+                            const width = (endColumn - startColumn + 1) * cellSize + (endColumn - startColumn) * COLUMN_GAP;
+
+                            return (
+                                <View
+                                    key={event.id}
+                                    pointerEvents="none"
+                                    style={[
+                                        styles.eventBar,
+                                        {
+                                            left,
+                                            width,
+                                            backgroundColor: event.color,
+                                        },
+                                    ]}
+                                >
+                                    {event.label ? (
+                                        <Text
+                                            numberOfLines={1}
+                                            style={[
+                                                styles.eventLabel,
+                                                event.textColor ? { color: event.textColor } : null,
+                                            ]}
+                                        >
+                                            {event.label}
+                                        </Text>
+                                    ) : null}
+                                </View>
+                            );
+                        })}
                 </View>
             ))}
         </View>
