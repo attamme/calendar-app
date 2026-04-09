@@ -1,151 +1,106 @@
 import { StyleSheet } from "react-native";
 import { colors } from "./colors";
 
-export const PRIORITY_COLORS = [
-    "#FF8A00",
-    "#FFB000",
-    "#FFD400",
-    "#F3FF2B",
-    "#B7FF1A",
-] as const;
-
 export const styles = StyleSheet.create({
-    card: {
-        backgroundColor: "#4F5675",
-        borderRadius: 24,
-        paddingTop: 22,
-        paddingHorizontal: 18,
-        paddingBottom: 16,
-        borderWidth: 1,
-        borderColor: "rgba(213, 208, 255, 0.22)",
-        overflow: "hidden",
-        gap: 12,
+    container: {
+        width: "100%",
+        maxWidth: 393,
     },
-    cornerAccent: {
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: 52,
-        height: 52,
-        borderBottomRightRadius: 22,
-        backgroundColor: "#FF3C45",
+    card: {
+        backgroundColor: colors.second,
+        borderRadius: 10,
+        paddingTop: 14,
+        paddingBottom: 12,
+        paddingHorizontal: 21,
+        minHeight: 179,
     },
     headerRow: {
         flexDirection: "row",
-        alignItems: "center",
         justifyContent: "space-between",
-        paddingLeft: 40,
-        paddingRight: 4,
-        marginBottom: 4,
+        alignItems: "flex-start",
+    },
+    headerLeft: {
+        flexDirection: "row",
+        alignItems: "center",
+        flex: 1,
+        marginRight: 12,
+    },
+    priorityPill: {
+        marginLeft: -21,
+        marginTop: -19,
+        width: 28,
+        height: 28,
+        transform: [{ rotate: "90deg" }],
+        borderTopRightRadius: 15,
+        borderBottomLeftRadius: 15,
+        marginRight: 25,
     },
     title: {
         color: colors.text,
-        fontSize: 40,
-        lineHeight: 44,
-        fontWeight: "600",
-        letterSpacing: 0.5,
-    },
-    priorityRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 8,
-    },
-    priorityPill: {
-        width: 13,
-        height: 40,
-        borderRadius: 10,
-    },
-    priorityPillMuted: {
-        backgroundColor: "rgba(255, 255, 255, 0.14)",
-    },
-    taskPagerRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingHorizontal: 8,
-    },
-    taskPagerPills: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
+        fontSize: 16,
         flexShrink: 1,
     },
-    taskPagerPill: {
-        height: 7,
-        borderRadius: 999,
+    statusRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingTop: 2,
     },
-    taskPagerPillActive: {
-        width: 24,
-    },
-    taskPagerPillMuted: {
-        width: 10,
-        backgroundColor: "rgba(255, 255, 255, 0.22)",
-    },
-    taskPagerText: {
-        color: "rgba(238, 238, 238, 0.7)",
-        fontSize: 12,
-        fontWeight: "600",
-        letterSpacing: 0.2,
+    statusBar: {
+        width: 9,
+        height: 25,
+        borderRadius: 15,
+        marginLeft: 6,
     },
     contentRow: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 6,
+        marginTop: 10,
     },
     navButton: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 28,
         alignItems: "center",
         justifyContent: "center",
     },
-    navButtonDisabled: {
-        opacity: 0.35,
-    },
-    descriptionTap: {
-        flex: 1,
-        borderRadius: 16,
-        paddingVertical: 4,
-        paddingHorizontal: 6,
+    navText: {
+        color: colors.fourth,
+        fontSize: 38,
+        lineHeight: 42,
+        fontWeight: "300",
     },
     description: {
+        flex: 1,
         color: colors.subtext,
-        fontSize: 18,
-        lineHeight: 30,
-        letterSpacing: 0.15,
+        fontSize: 14,
+        lineHeight: 24,
+        marginHorizontal: 8,
     },
-    footerRow: {
+    handle: {
+        width: 86,
+        height: 4,
+        borderRadius: 50,
+        backgroundColor: colors.line,
+        alignSelf: "center",
+        marginTop: 12,
+    },
+    actionsRow: {
         flexDirection: "row",
-        alignItems: "center",
         justifyContent: "space-between",
-        gap: 12,
-        paddingTop: 4,
+        marginTop: 15,
+        paddingHorizontal: 21,
     },
-    helperRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-        flexShrink: 1,
+    actionButton: {
+        width: 95,
+        paddingVertical: 14,
+        marginVertical: 0,
+        paddingHorizontal: 0,
     },
-    helperText: {
-        color: "rgba(238, 238, 238, 0.72)",
-        fontSize: 13,
+    deleteButton: {
+        backgroundColor: colors.second,
     },
-    doneButton: {
-        backgroundColor: "rgba(130, 140, 178, 0.8)",
-        paddingHorizontal: 22,
-        paddingVertical: 10,
-        borderRadius: 16,
-        minWidth: 128,
-        alignItems: "center",
+    editButton: {
+        backgroundColor: colors.third,
     },
-    doneButtonCompleted: {
-        backgroundColor: "rgba(89, 77, 200, 0.95)",
-    },
-    doneButtonText: {
-        color: colors.text,
-        fontSize: 17,
-        fontWeight: "500",
-        letterSpacing: 0.2,
+    finishButton: {
+        backgroundColor: colors.loginbtn,
     },
 });

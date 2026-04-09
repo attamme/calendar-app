@@ -11,6 +11,7 @@ exports.seed = async function(knex) {
     password: o.password,
     email: o.email,
     isAdmin: o.isAdmin,
+    email: o.email
     }
   }
 
@@ -18,6 +19,9 @@ exports.seed = async function(knex) {
     row({
       id: 1,
       username: "test",
+      password: "passwd",
+      isAdmin: false,
+      email: "pedophile@gmail.com"
       password: await bcrypt.hash("123", 10),
       email: "test@test",
       isAdmin: false

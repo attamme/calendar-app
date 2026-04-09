@@ -7,7 +7,7 @@ type ButtonProps = {
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
 };
-
+//Buttonil on jh onClick aga Inputil ei ole OnChange ega midagi
 const Button = ({ title, onPress, style}: ButtonProps) => {
   return (
     <TouchableOpacity 
