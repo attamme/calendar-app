@@ -12,45 +12,20 @@ import {
 
 import Button from "@/components/button";
 import AnimatedScreenSection from "@/components/AnimatedScreenSection";
-import Chip from "@/components/Chip";
 import FeaturedPlannerCard from "@/components/FeaturedPlannerCard";
 import FocusBucketCard from "@/components/FocusBucketCard";
 import HiFiHeader from "@/components/HiFiHeader";
-import InputText from "@/components/InputText";
 import PlannerCard from "@/components/PlannerCard";
 import { useAuth } from "@/providers/AuthProvider";
 import { usePlannerSync } from "@/providers/PlannerSyncProvider";
-import { createItem, fetchCalendars, fetchDashboard } from "@/services/api";
+import { fetchCalendars, fetchDashboard } from "@/services/api";
 import { theme } from "@/theme/tokens";
 import type {
-  ItemEffort,
-  ItemPriority,
   ItemType,
   PlannerCalendar,
   PlannerDashboard,
   PlannerItem,
 } from "@/types/planner";
-import { nextOccurrenceAt, tomorrowAt } from "@/utils/dates";
-
-const reminderOptions = [
-  { label: "10m", value: 10, tone: "coral" as const },
-  { label: "1h", value: 60, tone: "accent" as const },
-  { label: "2h", value: 120, tone: "mint" as const },
-  { label: "1d", value: 1440, tone: "amber" as const },
-];
-
-const priorityOptions: { label: string; value: ItemPriority; tone: "coral" | "accent" | "mint" | "amber" }[] = [
-  { label: "Urgent", value: "urgent", tone: "coral" },
-  { label: "Important", value: "important", tone: "accent" },
-  { label: "Normal", value: "normal", tone: "mint" },
-  { label: "Easy win", value: "easy_win", tone: "amber" },
-];
-
-const effortOptions: { label: string; value: ItemEffort; tone: "mint" | "amber" | "coral" }[] = [
-  { label: "Low effort", value: "low", tone: "mint" },
-  { label: "Medium", value: "medium", tone: "amber" },
-  { label: "Deep work", value: "high", tone: "coral" },
-];
 
 function buildNewItemParams(type: ItemType, calendarId: number | null) {
   return {
@@ -63,21 +38,15 @@ function buildNewItemParams(type: ItemType, calendarId: number | null) {
 export default function DashboardScreen() {
   const router = useRouter();
   const { token } = useAuth();
-  const { notifyPlannerChanged, refreshVersion } = usePlannerSync();
+  const { refreshVersion } = usePlannerSync();
 
   const [dashboard, setDashboard] = useState<PlannerDashboard | null>(null);
   const [calendars, setCalendars] = useState<PlannerCalendar[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const loadRequestRef = useRef(0);
 
-  const [quickTitle, setQuickTitle] = useState("");
-  const [quickType, setQuickType] = useState<ItemType>("task");
-  const [quickPriority, setQuickPriority] = useState<ItemPriority>("important");
-  const [quickEffort, setQuickEffort] = useState<ItemEffort>("medium");
   const [selectedCalendarId, setSelectedCalendarId] = useState<number | null>(null);
-  const [selectedReminders, setSelectedReminders] = useState<number[]>([60]);
 
   const liveQueue = dashboard?.sections.today.length
     ? dashboard.sections.today
@@ -176,60 +145,13 @@ export default function DashboardScreen() {
     loadScreenData();
   }, [loadScreenData, refreshVersion, token]);
 
-  function toggleReminder(offsetMinutes: number) {
-    setSelectedReminders((current) =>
-      current.includes(offsetMinutes)
-        ? current.filter((value) => value !== offsetMinutes)
-        : [...current, offsetMinutes]
-    );
-  }
-
-  async function handleQuickCreate() {
-    if (!token) {
-      return;
-    }
-
-    try {
-      setSaving(true);
-      setError("");
-
-      await createItem(
-        {
-          title: quickTitle.trim(),
-          type: quickType,
-          priority: quickPriority,
-          effort: quickEffort,
-          calendarId: selectedCalendarId,
-          dueAt: quickType === "task" ? nextOccurrenceAt(18) : undefined,
-          startAt: quickType === "event" ? tomorrowAt(9) : undefined,
-          endAt: quickType === "event" ? tomorrowAt(10) : undefined,
-          reminders: selectedReminders,
-        },
-        token
-      );
-
-      startTransition(() => {
-        setQuickTitle("");
-        setQuickPriority("important");
-        setQuickEffort("medium");
-        setSelectedReminders([60]);
-      });
-
-      notifyPlannerChanged();
-      await loadScreenData();
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : "Quick add failed");
-    } finally {
-      setSaving(false);
-    }
-  }
-
   const todayItems = dashboard?.sections.today || [];
   const overdueItems = dashboard?.sections.overdue || [];
   const easyWinItems = dashboard?.sections.easyWins || [];
   const nextUpItems = dashboard?.sections.nextUp || [];
   const sharedItems = dashboard?.sections.shared || [];
   const activeCalendars = calendars.slice(0, 3);
+  const ownerCalendarCount = calendars.filter((calendar) => calendar.is_owner).length;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -338,126 +260,76 @@ export default function DashboardScreen() {
         <AnimatedScreenSection delay={140} style={styles.capturePanel}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionCopy}>
-              <Text style={styles.sectionEyebrow}>Quick capture</Text>
-              <Text style={styles.sectionTitle}>Add something before it disappears.</Text>
+              <Text style={styles.sectionEyebrow}>Planning hub</Text>
+              <Text style={styles.sectionTitle}>Keep heavy actions on their own pages.</Text>
             </View>
-            <Button
-              onPress={() =>
-                router.push({
-                  pathname: "/planner-item/[id]",
-                  params: buildNewItemParams(quickType, selectedCalendarId),
-                })
-              }
-              style={styles.inlineButton}
-              textStyle={styles.inlineButtonText}
-              title="Full editor"
-              variant="ghost"
-            />
+            <Text style={styles.sectionHint}>{calendars.length} calendars connected</Text>
           </View>
 
-          <InputText
-            label="What needs your attention?"
-            onChangeText={setQuickTitle}
-            placeholder="Essay outline, meds refill, project check-in, food shop..."
-            value={quickTitle}
-          />
+          <Text style={styles.managementText}>
+            Quick capture, calendar setup, and friend connections now live on dedicated pages so this screen can stay focused on what matters now.
+          </Text>
 
-          <View style={styles.group}>
-            <Text style={styles.groupLabel}>Type</Text>
-            <View style={styles.chipRow}>
-              {(["task", "event"] as const).map((typeValue) => (
-                <Chip
-                  key={typeValue}
-                  label={typeValue === "task" ? "Task" : "Event"}
-                  onPress={() => setQuickType(typeValue)}
-                  selected={quickType === typeValue}
-                  tone={typeValue === "task" ? "accent" : "mint"}
-                />
-              ))}
+          <View style={styles.managementStack}>
+            <View style={styles.managementCard}>
+              <Text style={styles.managementCardEyebrow}>Capture</Text>
+              <Text style={styles.managementCardTitle}>Open a short add screen</Text>
+              <Text style={styles.managementCardText}>
+                Best for dropping in one task or event without carrying the full editor on this page.
+              </Text>
+              <Button
+                onPress={() => router.push("/(app)/quick-capture")}
+                title="Quick capture"
+              />
             </View>
-          </View>
 
-          <View style={styles.group}>
-            <Text style={styles.groupLabel}>Priority</Text>
-            <View style={styles.chipRow}>
-              {priorityOptions.map((option) => (
-                <Chip
-                  key={option.value}
-                  label={option.label}
-                  onPress={() => setQuickPriority(option.value)}
-                  selected={quickPriority === option.value}
-                  tone={option.tone}
-                />
-              ))}
+            <View style={styles.managementCard}>
+              <Text style={styles.managementCardEyebrow}>Calendars</Text>
+              <Text style={styles.managementCardTitle}>Manage structure elsewhere</Text>
+              <Text style={styles.managementCardText}>
+                Create calendars, review ownership, and share them without crowding the month view.
+              </Text>
+              <Button
+                onPress={() => router.push("/(app)/calendar-center")}
+                title="Calendar center"
+                variant="secondary"
+              />
+            </View>
+
+            <View style={styles.managementCard}>
+              <Text style={styles.managementCardEyebrow}>Sharing</Text>
+              <Text style={styles.managementCardTitle}>Add friends from a dedicated flow</Text>
+              <Text style={styles.managementCardText}>
+                Keep invites and shared planning together, then come back here to focus on the work.
+              </Text>
+              <Button
+                onPress={() => router.push("/(app)/friend-search")}
+                title="Add friend"
+                variant="ghost"
+              />
             </View>
           </View>
 
-          <View style={styles.group}>
-            <Text style={styles.groupLabel}>Effort</Text>
-            <View style={styles.chipRow}>
-              {effortOptions.map((option) => (
-                <Chip
-                  key={option.value}
-                  label={option.label}
-                  onPress={() => setQuickEffort(option.value)}
-                  selected={quickEffort === option.value}
-                  tone={option.tone}
-                />
-              ))}
+          <View style={styles.metricStrip}>
+            <View style={styles.metricTile}>
+              <Text style={styles.metricValue}>{ownerCalendarCount}</Text>
+              <Text style={styles.metricLabel}>Owned calendars</Text>
+            </View>
+            <View style={styles.metricTile}>
+              <Text style={styles.metricValue}>{sharedItems.length}</Text>
+              <Text style={styles.metricLabel}>Shared items</Text>
+            </View>
+            <View style={styles.metricTile}>
+              <Text style={styles.metricValue}>{dashboard?.summary.nextUpCount || 0}</Text>
+              <Text style={styles.metricLabel}>Next up</Text>
             </View>
           </View>
 
-          <View style={styles.group}>
-            <Text style={styles.groupLabel}>Calendar</Text>
-            <View style={styles.chipRow}>
-              {activeCalendars.length ? (
-                activeCalendars.map((calendar) => (
-                  <Chip
-                    key={calendar.id}
-                    label={calendar.title}
-                    onPress={() => setSelectedCalendarId(calendar.id)}
-                    selected={selectedCalendarId === calendar.id}
-                    tone={calendar.is_owner ? "accent" : "amber"}
-                  />
-                ))
-              ) : (
-                <Chip label="No calendar yet" selected tone="neutral" />
-              )}
-            </View>
-          </View>
-
-          <View style={styles.group}>
-            <Text style={styles.groupLabel}>Reminder plan</Text>
-            <View style={styles.chipRow}>
-              {reminderOptions.map((option) => (
-                <Chip
-                  key={option.value}
-                  label={option.label}
-                  onPress={() => toggleReminder(option.value)}
-                  selected={selectedReminders.includes(option.value)}
-                  tone={option.tone}
-                />
-              ))}
-            </View>
-          </View>
-
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-          <View style={styles.captureActions}>
-            <Button
-              disabled={!quickTitle.trim()}
-              loading={saving}
-              onPress={handleQuickCreate}
-              style={styles.captureButton}
-              title={quickType === "task" ? "Add task" : "Add event"}
-            />
-            <Button
-              onPress={() => openNewItem(quickType)}
-              style={styles.captureButton}
-              title="Open editor"
-              variant="secondary"
-            />
-          </View>
+          <Text style={styles.calendarPreviewText}>
+            {activeCalendars.length
+              ? `Recent calendars: ${activeCalendars.map((calendar) => calendar.title).join(" | ")}`
+              : "Create your first calendar from Calendar center."}
+          </Text>
         </AnimatedScreenSection>
 
         <AnimatedScreenSection delay={190} style={styles.sectionShell}>
@@ -519,6 +391,8 @@ export default function DashboardScreen() {
             )}
           </View>
         </AnimatedScreenSection>
+
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -609,6 +483,66 @@ const styles = StyleSheet.create({
     shadowRadius: 22,
     elevation: 4,
   },
+  managementText: {
+    color: theme.colors.textSecondary,
+    lineHeight: 22,
+  },
+  managementStack: {
+    gap: 12,
+  },
+  managementCard: {
+    backgroundColor: theme.colors.surfaceWarm,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: 18,
+    gap: 12,
+  },
+  managementCardEyebrow: {
+    color: theme.colors.accentHigh,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  managementCardTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 19,
+    fontWeight: "800",
+  },
+  managementCardText: {
+    color: theme.colors.textSecondary,
+    lineHeight: 21,
+  },
+  metricStrip: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  metricTile: {
+    flex: 1,
+    backgroundColor: theme.colors.backgroundStrong,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 16,
+    gap: 6,
+  },
+  metricValue: {
+    color: theme.colors.textPrimary,
+    fontSize: 24,
+    fontWeight: "800",
+  },
+  metricLabel: {
+    color: theme.colors.textSecondary,
+    fontSize: 12,
+    fontWeight: "700",
+    lineHeight: 16,
+  },
+  calendarPreviewText: {
+    color: theme.colors.textMuted,
+    lineHeight: 20,
+  },
   sectionShell: {
     backgroundColor: theme.colors.surface,
     borderRadius: 28,
@@ -657,30 +591,6 @@ const styles = StyleSheet.create({
   },
   inlineButtonText: {
     fontSize: 13,
-  },
-  group: {
-    gap: 10,
-  },
-  groupLabel: {
-    color: theme.colors.textSecondary,
-    fontSize: 13,
-    fontWeight: "800",
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-  },
-  chipRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  captureActions: {
-    flexDirection: "row",
-    gap: 10,
-    flexWrap: "wrap",
-  },
-  captureButton: {
-    flex: 1,
-    minWidth: 140,
   },
   cardStack: {
     gap: 12,

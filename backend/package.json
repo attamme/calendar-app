@@ -3,7 +3,8 @@
     "start": "node index.js",
     "migrate": "npx knex --knexfile db/knexfile.js migrate:latest",
     "rollback": "npx knex --knexfile db/knexfile.js migrate:rollback",
-    "seed": "npx knex --knexfile db/knexfile.js seed:run"
+    "seed": "npx knex --knexfile db/knexfile.js seed:run",
+    "smoke:friends": "node scripts/friend-system-smoke.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

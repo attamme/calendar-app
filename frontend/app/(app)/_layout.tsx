@@ -1,9 +1,25 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
+import { ActivityIndicator, SafeAreaView, StyleSheet } from "react-native";
 
+import { useAuth } from "@/providers/AuthProvider";
 import { theme } from "@/theme/tokens";
 
 export default function AppTabsLayout() {
+  const { loading, user } = useAuth();
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.loadingScreen}>
+        <ActivityIndicator color={theme.colors.accentHigh} size="large" />
+      </SafeAreaView>
+    );
+  }
+
+  if (!user) {
+    return <Redirect href="/(auth)/landing-page" />;
+  }
+
   return (
     <Tabs
       screenOptions={{
@@ -50,6 +66,33 @@ export default function AppTabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="quick-capture"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="calendar-center"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="friend-search"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingScreen: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});

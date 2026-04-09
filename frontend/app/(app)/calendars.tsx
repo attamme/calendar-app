@@ -17,23 +17,11 @@ import AnimatedScreenSection from "@/components/AnimatedScreenSection";
 import Chip from "@/components/Chip";
 import FeaturedPlannerCard from "@/components/FeaturedPlannerCard";
 import HiFiHeader from "@/components/HiFiHeader";
-import InputText from "@/components/InputText";
 import { useAuth } from "@/providers/AuthProvider";
 import { usePlannerSync } from "@/providers/PlannerSyncProvider";
-import {
-  createCalendar,
-  fetchCalendars,
-  fetchFriends,
-  fetchItems,
-  shareCalendar,
-} from "@/services/api";
+import { fetchCalendars, fetchItems } from "@/services/api";
 import { theme } from "@/theme/tokens";
-import type {
-  FriendConnection,
-  PlannerCalendar,
-  PlannerItem,
-  SharePermission,
-} from "@/types/planner";
+import type { PlannerCalendar, PlannerItem } from "@/types/planner";
 import {
   addMonths,
   buildMonthGrid,
@@ -43,9 +31,6 @@ import {
   getWeekdayLabels,
   isToday,
 } from "@/utils/dates";
-
-const colorOptions = ["#90A7FF", "#6AD4A7", "#FFD27D", "#FF9787", "#A996FF"];
-const categoryOptions = ["school", "work", "personal", "health", "routines"];
 
 type CalendarFilter = "all" | "needs_filing" | number;
 
@@ -108,30 +93,21 @@ function buildNewItemParams(
 export default function CalendarsScreen() {
   const router = useRouter();
   const { token } = useAuth();
-  const { notifyPlannerChanged, refreshVersion } = usePlannerSync();
+  const { refreshVersion } = usePlannerSync();
 
   const [calendars, setCalendars] = useState<PlannerCalendar[]>([]);
-  const [friends, setFriends] = useState<FriendConnection[]>([]);
   const [items, setItems] = useState<PlannerItem[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
   const loadRequestRef = useRef(0);
+
   const [visibleMonth, setVisibleMonth] = useState(
     () => new Date(new Date().getFullYear(), new Date().getMonth(), 1)
   );
   const [selectedDateKey, setSelectedDateKey] = useState(() => getDateKey(new Date()));
   const [calendarFilter, setCalendarFilter] = useState<CalendarFilter>("all");
-
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("school");
-  const [color, setColor] = useState(colorOptions[0]);
-
   const [selectedCalendarId, setSelectedCalendarId] = useState<number | null>(null);
   const [featuredIndex, setFeaturedIndex] = useState(0);
-  const [shareUsername, setShareUsername] = useState("");
-  const [sharePermission, setSharePermission] = useState<Exclude<SharePermission, "owner">>("view");
 
   const loadCalendars = useCallback(async () => {
     if (!token) {
@@ -145,9 +121,8 @@ export default function CalendarsScreen() {
       setRefreshing(true);
       setError("");
 
-      const [calendarResponse, friendResponse, itemResponse] = await Promise.all([
+      const [calendarResponse, itemResponse] = await Promise.all([
         fetchCalendars(token),
-        fetchFriends(token),
         fetchItems(token, "all"),
       ]);
 
@@ -157,7 +132,6 @@ export default function CalendarsScreen() {
 
       startTransition(() => {
         setCalendars(calendarResponse.calendars);
-        setFriends(friendResponse.friends);
         setItems(itemResponse.items);
         setSelectedCalendarId((current) => current || calendarResponse.calendars[0]?.id || null);
       });
@@ -193,51 +167,6 @@ export default function CalendarsScreen() {
     loadCalendars();
   }, [loadCalendars, refreshVersion, token]);
 
-  async function handleCreateCalendar() {
-    if (!token) {
-      return;
-    }
-
-    try {
-      setSaving(true);
-      setError("");
-      await createCalendar({ title, description, category, color }, token);
-      startTransition(() => {
-        setTitle("");
-        setDescription("");
-        setCategory("school");
-        setColor(colorOptions[0]);
-      });
-      notifyPlannerChanged();
-      await loadCalendars();
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : "Failed to create calendar");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleShareCalendar() {
-    if (!token || !selectedCalendarId) {
-      return;
-    }
-
-    try {
-      setSaving(true);
-      setError("");
-      await shareCalendar(selectedCalendarId, shareUsername, sharePermission, token);
-      startTransition(() => {
-        setShareUsername("");
-      });
-      notifyPlannerChanged();
-      await loadCalendars();
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : "Failed to share calendar");
-    } finally {
-      setSaving(false);
-    }
-  }
-
   const needsFilingCount = items.filter((item) => item.is_direct_share && !item.calendar_id).length;
   const filteredItems = items.filter((item) => {
     if (calendarFilter === "all") {
@@ -271,12 +200,14 @@ export default function CalendarsScreen() {
   const featuredQueue = selectedDayItems.length ? selectedDayItems : filteredItems;
   const featuredItem = featuredQueue[featuredIndex] || null;
   const upcomingFeaturedItems = featuredQueue.slice(featuredIndex + 1, featuredIndex + 6);
+  const ownerCalendarCount = calendars.filter((calendar) => calendar.is_owner).length;
+
   const headerTitle =
     typeof calendarFilter === "number"
-      ? calendars.find((calendar) => calendar.id === calendarFilter)?.title || "Work Calendar"
+      ? calendars.find((calendar) => calendar.id === calendarFilter)?.title || "Calendar"
       : calendarFilter === "needs_filing"
-        ? "Shared Items"
-        : "Work Calendar";
+        ? "Needs filing"
+        : "Calendars";
 
   useEffect(() => {
     setFeaturedIndex(0);
@@ -326,10 +257,10 @@ export default function CalendarsScreen() {
 
         <AnimatedScreenSection delay={80} style={styles.actionRow}>
           <Button
-            onPress={() => setCalendarFilter("all")}
+            onPress={() => router.push("/(app)/calendar-center")}
             style={styles.actionButton}
             textStyle={styles.actionButtonText}
-            title="All calendars"
+            title="Calendar center"
             variant="secondary"
           />
           <Button
@@ -369,6 +300,7 @@ export default function CalendarsScreen() {
           <View style={styles.monthHeader}>
             <View>
               <Text style={styles.panelTitle}>{getMonthLabel(visibleMonth)}</Text>
+              <Text style={styles.panelText}>Month view stays clean while setup lives elsewhere.</Text>
             </View>
             <View style={styles.monthActions}>
               <Pressable
@@ -475,31 +407,14 @@ export default function CalendarsScreen() {
           </View>
         </AnimatedScreenSection>
 
-        <AnimatedScreenSection delay={160} style={styles.bottomActionRow}>
-          <Button
-            onPress={() =>
-              router.push({
-                pathname: "/planner-item/[id]",
-                params: buildNewItemParams(
-                  selectedDateKey,
-                  "task",
-                  typeof calendarFilter === "number" ? calendarFilter : selectedCalendarId
-                ),
-              })
-            }
-            style={styles.addTodoButton}
-            title="Add todo"
-          />
-        </AnimatedScreenSection>
-
-        <AnimatedScreenSection delay={200} style={styles.panel}>
+        <AnimatedScreenSection delay={160} style={styles.panel}>
           <View style={styles.agendaHeader}>
-            <View>
+            <View style={styles.sectionCopy}>
               <Text style={styles.panelTitle}>{formatSelectedDateLabel(selectedDateKey)}</Text>
               <Text style={styles.panelText}>
                 {selectedDayItems.length
                   ? `${selectedDayItems.length} item${selectedDayItems.length === 1 ? "" : "s"} on this day`
-                  : "No items yet. Good place to drop a task, class, or friend plan."}
+                  : "No items yet. Add a task or event and it will appear here and in the month grid."}
               </Text>
             </View>
             <Button
@@ -550,156 +465,47 @@ export default function CalendarsScreen() {
                 </Pressable>
               ))
             ) : (
-              <Text style={styles.emptyText}>Tap a day, add a task or event, and it will show up here and in the month grid.</Text>
+              <Text style={styles.emptyText}>Tap a day, then add a task or event with one clear next step.</Text>
             )}
           </View>
         </AnimatedScreenSection>
 
-        <AnimatedScreenSection delay={240} style={styles.panel}>
-          <Text style={styles.panelTitle}>Create a calendar</Text>
-          <InputText
-            label="Title"
-            onChangeText={setTitle}
-            placeholder="Semester 2, Household, Client work, Gym reset..."
-            value={title}
-          />
-          <InputText
-            label="Description"
-            multiline
-            onChangeText={setDescription}
-            placeholder="What kind of plans live in this calendar?"
-            value={description}
-          />
+        <AnimatedScreenSection delay={200} style={styles.organizerPanel}>
+          <View style={styles.sectionCopy}>
+            <Text style={styles.sectionEyebrow}>Structure</Text>
+            <Text style={styles.sectionTitle}>Calendar management moved out of the grid.</Text>
+            <Text style={styles.panelText}>
+              Use Calendar center for creating calendars, reviewing access, and sharing them with other people.
+            </Text>
+          </View>
 
-          <View style={styles.group}>
-            <Text style={styles.groupLabel}>Life area</Text>
-            <View style={styles.chipRow}>
-              {categoryOptions.map((option) => (
-                <Chip
-                  key={option}
-                  label={option}
-                  onPress={() => setCategory(option)}
-                  selected={category === option}
-                  tone="accent"
-                />
-              ))}
+          <View style={styles.metricStrip}>
+            <View style={styles.metricTile}>
+              <Text style={styles.metricValue}>{calendars.length}</Text>
+              <Text style={styles.metricLabel}>Total calendars</Text>
+            </View>
+            <View style={styles.metricTile}>
+              <Text style={styles.metricValue}>{ownerCalendarCount}</Text>
+              <Text style={styles.metricLabel}>Owned by you</Text>
+            </View>
+            <View style={styles.metricTile}>
+              <Text style={styles.metricValue}>{needsFilingCount}</Text>
+              <Text style={styles.metricLabel}>Need filing</Text>
             </View>
           </View>
 
-          <View style={styles.group}>
-            <Text style={styles.groupLabel}>Color</Text>
-            <View style={styles.chipRow}>
-              {colorOptions.map((option) => (
-                <Chip
-                  key={option}
-                  label={option.replace("#", "")}
-                  onPress={() => setColor(option)}
-                  rightSlot={<View style={[styles.colorDot, { backgroundColor: option }]} />}
-                  selected={color === option}
-                  tone="neutral"
-                />
-              ))}
-            </View>
-          </View>
-
-          <Button
-            disabled={!title.trim()}
-            loading={saving}
-            onPress={handleCreateCalendar}
-            title="Create calendar"
-          />
-        </AnimatedScreenSection>
-
-        <AnimatedScreenSection delay={280} style={styles.panel}>
-          <Text style={styles.panelTitle}>Share a calendar</Text>
-          <Text style={styles.panelText}>
-            Share full calendars when the whole stream belongs together. Direct item sharing stays better for one-off events.
-          </Text>
-
-          <View style={styles.group}>
-            <Text style={styles.groupLabel}>Pick a calendar</Text>
-            <View style={styles.chipRow}>
-              {calendars.filter((calendar) => calendar.is_owner).map((calendar) => (
-                <Chip
-                  key={calendar.id}
-                  label={calendar.title}
-                  onPress={() => setSelectedCalendarId(calendar.id)}
-                  selected={selectedCalendarId === calendar.id}
-                  tone="amber"
-                />
-              ))}
-            </View>
-          </View>
-
-          <InputText
-            autoCapitalize="none"
-            label="Friend username"
-            onChangeText={setShareUsername}
-            placeholder="Pick from your friends or type a username"
-            value={shareUsername}
-          />
-
-          <View style={styles.chipRow}>
-            {friends.map((friend) => (
-              <Chip
-                key={friend.id}
-                label={friend.username}
-                onPress={() => setShareUsername(friend.username)}
-                selected={shareUsername === friend.username}
-                tone="mint"
-              />
-            ))}
-          </View>
-
-          <View style={styles.group}>
-            <Text style={styles.groupLabel}>Permission</Text>
-            <View style={styles.chipRow}>
-              {(["view", "edit"] as const).map((permission) => (
-                <Chip
-                  key={permission}
-                  label={permission === "view" ? "View only" : "Can edit"}
-                  onPress={() => setSharePermission(permission)}
-                  selected={sharePermission === permission}
-                  tone={permission === "view" ? "accent" : "coral"}
-                />
-              ))}
-            </View>
-          </View>
-
-          <Button
-            disabled={!selectedCalendarId || !shareUsername.trim()}
-            onPress={handleShareCalendar}
-            title="Share calendar"
-            variant="secondary"
-          />
-        </AnimatedScreenSection>
-
-        <AnimatedScreenSection delay={320} style={styles.listSection}>
-          <Text style={styles.listTitle}>Your calendars</Text>
-          <View style={styles.calendarList}>
-            {calendars.map((calendar) => (
-              <View key={calendar.id} style={styles.calendarCard}>
-                <View style={styles.calendarHeader}>
-                  <View style={styles.calendarTitleRow}>
-                    <View style={[styles.calendarSwatch, { backgroundColor: calendar.color }]} />
-                    <View style={styles.calendarCopy}>
-                      <Text style={styles.calendarTitle}>{calendar.title}</Text>
-                      <Text style={styles.calendarMeta}>
-                        {calendar.category} | {calendar.item_count} items
-                      </Text>
-                    </View>
-                  </View>
-                  <Chip
-                    label={calendar.is_owner ? "Owner" : calendar.access_permission}
-                    selected
-                    tone={calendar.is_owner ? "accent" : "amber"}
-                  />
-                </View>
-                <Text style={styles.calendarDescription}>
-                  {calendar.description || "No description yet. Great place to define what belongs here."}
-                </Text>
-              </View>
-            ))}
+          <View style={styles.organizerActions}>
+            <Button
+              onPress={() => router.push("/(app)/calendar-center")}
+              style={styles.organizerButton}
+              title="Open calendar center"
+            />
+            <Button
+              onPress={() => router.push("/(app)/friends")}
+              style={styles.organizerButton}
+              title="Open friends"
+              variant="ghost"
+            />
           </View>
         </AnimatedScreenSection>
 
@@ -734,19 +540,24 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 13,
   },
-  bottomActionRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-  },
-  addTodoButton: {
-    width: 152,
-    borderRadius: 999,
-  },
   panel: {
     backgroundColor: theme.colors.surface,
     borderRadius: 28,
     padding: 20,
     gap: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: "#171A28",
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.18,
+    shadowRadius: 22,
+    elevation: 4,
+  },
+  organizerPanel: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 28,
+    padding: 20,
+    gap: 18,
     borderWidth: 1,
     borderColor: theme.colors.border,
     shadowColor: "#171A28",
@@ -784,6 +595,13 @@ const styles = StyleSheet.create({
   },
   filterRow: {
     gap: 10,
+  },
+  colorDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
   },
   monthGridShell: {
     borderRadius: 22,
@@ -869,6 +687,9 @@ const styles = StyleSheet.create({
   agendaHeader: {
     gap: 10,
   },
+  sectionCopy: {
+    gap: 4,
+  },
   inlineButton: {
     alignSelf: "flex-start",
   },
@@ -879,7 +700,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     backgroundColor: theme.colors.surfaceWarm,
-    borderRadius: 10,
+    borderRadius: 18,
     padding: 14,
   },
   agendaStripe: {
@@ -909,78 +730,52 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     lineHeight: 20,
   },
-  group: {
+  sectionEyebrow: {
+    color: theme.colors.accentHigh,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  sectionTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 24,
+    fontWeight: "800",
+    lineHeight: 30,
+  },
+  metricStrip: {
+    flexDirection: "row",
     gap: 10,
   },
-  groupLabel: {
-    color: theme.colors.textSecondary,
-    fontSize: 13,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
+  metricTile: {
+    flex: 1,
+    backgroundColor: theme.colors.backgroundStrong,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 16,
+    gap: 6,
   },
-  chipRow: {
+  metricValue: {
+    color: theme.colors.textPrimary,
+    fontSize: 24,
+    fontWeight: "800",
+  },
+  metricLabel: {
+    color: theme.colors.textSecondary,
+    fontSize: 12,
+    fontWeight: "700",
+    lineHeight: 16,
+  },
+  organizerActions: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
   },
-  colorDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.3)",
-  },
-  listSection: {
-    gap: 12,
-  },
-  listTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 22,
-    fontWeight: "800",
-  },
-  calendarList: {
-    gap: 12,
-  },
-  calendarCard: {
-    backgroundColor: theme.colors.surfaceWarm,
-    borderRadius: 12,
-    padding: 18,
-    gap: 14,
-  },
-  calendarHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  calendarTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
+  organizerButton: {
     flex: 1,
-  },
-  calendarSwatch: {
-    width: 16,
-    height: 56,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
-  },
-  calendarCopy: {
-    gap: 4,
-    flex: 1,
-  },
-  calendarTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 18,
-    fontWeight: "800",
-  },
-  calendarMeta: {
-    color: theme.colors.textSecondary,
-  },
-  calendarDescription: {
-    color: theme.colors.textSecondary,
-    lineHeight: 21,
+    minWidth: 150,
   },
   emptyText: {
     color: theme.colors.textMuted,

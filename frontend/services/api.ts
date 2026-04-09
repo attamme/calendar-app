@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import { Platform } from "react-native";
 
 import config from "@/app/config.json";
 import type {
@@ -38,6 +39,14 @@ const API_BASE =
   deriveLocalApiBase() ||
   config.API_URL;
 
+function shouldSendTunnelBypassHeader() {
+  if (Platform.OS === "web") {
+    return false;
+  }
+
+  return /ngrok-free\.dev|loca\.lt|localtunnel\.me/i.test(API_BASE);
+}
+
 type RequestOptions = {
   method?: "GET" | "POST" | "PATCH";
   body?: Record<string, unknown>;
@@ -57,7 +66,7 @@ async function apiRequest<T>(path: string, options: RequestOptions = {}): Promis
       method: options.method || "GET",
       headers: {
         "Content-Type": "application/json",
-        "ngrok-skip-browser-warning": "69",
+        ...(shouldSendTunnelBypassHeader() ? { "ngrok-skip-browser-warning": "69" } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: options.body ? JSON.stringify(options.body) : undefined,

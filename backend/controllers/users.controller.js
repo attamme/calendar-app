@@ -179,12 +179,22 @@ async function addFriendInternal(req, res, lookupValue) {
       });
     }
 
+    const connection = await knex("friends")
+      .where({
+        user_id: req.auth.userId,
+        friend_id: friend.id,
+      })
+      .select("created_at")
+      .first();
+
     return sendSuccess(res, 201, {
       friend: {
         id: friend.id,
         username: friend.username,
         email: friend.email,
+        connected_at: connection?.created_at || new Date().toISOString(),
       },
+      alreadyConnected: alreadyFriends,
     });
   } catch (error) {
     return sendError(res, 500, "Failed to add friend");

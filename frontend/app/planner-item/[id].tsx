@@ -580,7 +580,7 @@ export default function PlannerItemEditorScreen() {
               autoCapitalize="none"
               hideLabel
               onChangeText={setShareUsername}
-              placeholder="Friend username"
+              placeholder="Friend username or email"
               value={shareUsername}
               variant="figma"
             />
