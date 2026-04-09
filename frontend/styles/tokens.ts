@@ -8,6 +8,12 @@ export const colors = {
   accent: "#6A5AFC",
   error: "#B3261E",
   white: "#FFFFFF",
+  homeHeader: "#CECECE",
+  homeCard: "#878787",
+  homeTile: "#A8A8A8",
+  homeTileInner: "#878787",
+  homeChip: "#BDBDBD",
+  homeSelection: "#5E5E5E",
 } as const;
 
 export const spacing = {

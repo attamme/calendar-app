@@ -1,25 +1,92 @@
-import { SafeAreaView, Text, View } from "react-native";
-import Button from "@/components/button";
-import { useSession } from "@/services/session";
+import { useState } from "react";
+import { Pressable, SafeAreaView, Text, View } from "react-native";
+import MiniCalendar from "@/components/MiniCalendar";
+import { styles } from "@/styles/home";
+
+const CATEGORY_ROWS = [
+  ["School", "Work"],
+  ["Daily", "Epstein"],
+] as const;
+
+const CALENDAR_CARDS = ["All", "Work"] as const;
 
 export default function Home() {
-  const { signOut, status } = useSession();
+  const [selectedCategory, setSelectedCategory] = useState("School");
+  const [selectedCalendar, setSelectedCalendar] = useState<(typeof CALENDAR_CARDS)[number]>("All");
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor: "#FFFFFF",
-        paddingHorizontal: 24,
-        paddingTop: 32,
-      }}
-    >
-      <View style={{ gap: 16 }}>
-        <Text style={{ fontSize: 28, fontWeight: "600", color: "#171717" }}>Calendar App</Text>
-        <Text style={{ fontSize: 16, lineHeight: 24, color: "#6A6A6A" }}>
-          Protected app shell is active. Current session: {status}.
-        </Text>
-        <Button title="Sign out" variant="secondary" onPress={signOut} style={{ width: 152 }} />
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.sidebar}>
+          <View style={styles.menuIcon}>
+            <View style={styles.menuLine} />
+            <View style={styles.menuLine} />
+            <View style={styles.menuLine} />
+          </View>
+
+          <View style={styles.avatarColumn}>
+            <View style={styles.avatarCircle} />
+            <View style={styles.avatarCircle} />
+            <View style={styles.avatarCircle} />
+          </View>
+
+          <View style={styles.sidebarActions}>
+            <View style={styles.selectionButton}>
+              <View style={styles.selectionInner} />
+            </View>
+            <View style={styles.addButton}>
+              <View style={styles.addLineVertical} />
+              <View style={styles.addLineHorizontal} />
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.main}>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>The most urgent stuff</Text>
+          </View>
+
+          <View style={styles.content}>
+            <View style={styles.categoryPanel}>
+              {CATEGORY_ROWS.map((row, rowIndex) => (
+                <View key={`row-${rowIndex}`} style={styles.categoryRow}>
+                  {row.map((category) => {
+                    const isSelected = category === selectedCategory;
+
+                    return (
+                      <Pressable
+                        key={category}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Select ${category} category`}
+                        onPress={() => setSelectedCategory(category)}
+                        style={[styles.categoryChip, isSelected && styles.categoryChipSelected]}
+                      >
+                        <Text style={styles.categoryText}>{category}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ))}
+              <Text style={styles.hashText}>#</Text>
+            </View>
+
+            <View style={styles.todayCard}>
+              <Text style={styles.todayLabel}>Today</Text>
+            </View>
+
+            <View style={styles.calendarRow}>
+              {CALENDAR_CARDS.map((label) => (
+                <MiniCalendar
+                  key={label}
+                  label={label}
+                  onPress={() => setSelectedCalendar(label)}
+                  selected={selectedCalendar === label}
+                  variant="dashboard"
+                />
+              ))}
+            </View>
+          </View>
+        </View>
       </View>
     </SafeAreaView>
   );

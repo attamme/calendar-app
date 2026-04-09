@@ -1,3 +1,6 @@
 node_modules
 
 db.sqlite3
+AGENTS.md
+docs/PLAN.md
+docs/Roadmap.md
