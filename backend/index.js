@@ -1,19 +1,20 @@
-const express = require("express")
+const express = require("express");
 const cookieParser = require("cookie-parser");
-const app = express()
-const router = app.router
-const port = 3000
-app.use(express.json())
-app.use(cookieParser())
 
-const userRouter = require("../backend/routers/users.router")
-const calRouter = require("../backend/routers/calendars.router")
-const expRouter = require("../backend/routers/experience.router")
+const app = express();
+const port = 3000;
 
-router.use("/users", userRouter)
-router.use("/calendars", calRouter)
-router.use("/experiences", expRouter)
+const userRouter = require("./routers/users.router");
+const calRouter = require("./routers/calendars.router");
+const expRouter = require("./routers/experience.router");
 
-app.listen(port, (req, res) => {
-    console.log("app listening on port: "+port)
-})
+app.use(express.json());
+app.use(cookieParser());
+
+app.use("/users", userRouter);
+app.use("/calendars", calRouter);
+app.use("/experiences", expRouter);
+
+app.listen(port, () => {
+  console.log(`app listening on port: ${port}`);
+});

@@ -6,6 +6,21 @@ type RegisterPayload = {
   password: string;
 };
 
+async function readErrorMessage(response: Response) {
+  try {
+    const payload = await response.json();
+    if (typeof payload?.message === "string" && payload.message) {
+      return payload.message;
+    }
+  } catch {}
+
+  try {
+    return await response.text();
+  } catch {
+    return "Registration failed";
+  }
+}
+
 export default async function registerUser(payload: RegisterPayload) {
   const response = await fetch(`${API_URL}/users/create`, {
     method: "POST",
@@ -17,7 +32,7 @@ export default async function registerUser(payload: RegisterPayload) {
   });
 
   if (!response.ok) {
-    const message = await response.text();
+    const message = await readErrorMessage(response);
     throw new Error(message || "Registration failed");
   }
 }
