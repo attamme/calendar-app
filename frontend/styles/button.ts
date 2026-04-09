@@ -1,22 +1,23 @@
 import { StyleSheet } from "react-native";
+import { colors, radius, typography } from "@/styles/tokens";
 
 export const styles = StyleSheet.create({
   container: {
     height: 48,
-    borderRadius: 100,
+    borderRadius: radius.pill,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 20,
   },
   primary: {
-    backgroundColor: "#747474",
+    backgroundColor: colors.actionNeutral,
   },
   secondary: {
-    backgroundColor: "#747474",
+    backgroundColor: colors.actionNeutral,
   },
   title: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "400",
+    color: colors.white,
+    fontSize: typography.size.body,
+    fontFamily: typography.fontFamily.inter,
   },
 });

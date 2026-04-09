@@ -1,38 +1,45 @@
 import { StyleSheet } from "react-native";
+import { colors, radius, shadows, spacing, typography } from "@/styles/tokens";
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 37,
+    paddingHorizontal: spacing.authGutter,
     paddingTop: 18,
     paddingBottom: 32,
   },
   title: {
-    color: "#111111",
-    fontSize: 24,
+    color: colors.textPrimary,
+    fontSize: typography.size.title,
+    lineHeight: typography.lineHeight.bodyLg,
+    fontFamily: typography.fontFamily.inter,
     marginTop: 40,
     marginBottom: 8,
   },
   subtitle: {
-    color: "#696969",
-    fontSize: 20,
+    color: colors.textSecondary,
+    fontSize: typography.size.bodyLg,
+    lineHeight: typography.lineHeight.bodyLg,
+    fontFamily: typography.fontFamily.inter,
     marginBottom: 35,
   },
   heroImage: {
     width: "100%",
     height: 168,
-    backgroundColor: "#D9D9D9",
-    borderRadius: 20,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.card,
     marginBottom: 57,
     opacity: 0.45,
   },
   sectionTitle: {
-    color: "#111111",
-    fontSize: 24,
+    color: colors.textPrimary,
+    fontSize: typography.size.title,
+    lineHeight: typography.lineHeight.bodyLg,
+    fontFamily: typography.fontFamily.inter,
     marginBottom: 24,
   },
   buttonRow: {
@@ -44,9 +51,10 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   description: {
-    color: "#696969",
-    fontSize: 20,
-    lineHeight: 34,
+    color: colors.textSecondary,
+    fontSize: typography.size.bodyLg,
+    lineHeight: typography.lineHeight.roomy,
+    fontFamily: typography.fontFamily.inter,
     paddingRight: 20,
   },
   helpButton: {
@@ -56,13 +64,15 @@ export const styles = StyleSheet.create({
     width: 102,
     height: 102,
     borderRadius: 51,
-    backgroundColor: "#6A5AFC",
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
+    ...shadows.floating,
   },
   helpButtonText: {
-    color: "#FFFFFF",
-    fontSize: 48,
+    color: colors.white,
+    fontSize: typography.size.display,
+    fontFamily: typography.fontFamily.balsamiqBold,
     transform: [{ rotate: "30deg" }],
   },
 });

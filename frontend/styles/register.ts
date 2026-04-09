@@ -1,9 +1,10 @@
 import { StyleSheet } from "react-native";
+import { colors, spacing, typography } from "@/styles/tokens";
 
 export const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.background,
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -14,22 +15,24 @@ export const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 38,
-    paddingTop: 115,
+    paddingTop: 112,
   },
   title: {
-    fontSize: 36,
+    fontSize: typography.size.hero,
     textAlign: "center",
-    color: "#111111",
+    color: colors.textPrimary,
+    fontFamily: typography.fontFamily.inter,
     marginBottom: 48,
   },
   submitButton: {
     width: 152,
     alignSelf: "center",
-    marginTop: 5,
+    marginTop: spacing.xs,
   },
   errorText: {
-    color: "#B3261E",
-    fontSize: 14,
+    color: colors.error,
+    fontSize: typography.size.bodySm,
+    fontFamily: typography.fontFamily.inter,
     textAlign: "center",
     marginTop: 16,
   },
@@ -39,7 +42,8 @@ export const styles = StyleSheet.create({
     marginTop: 22,
   },
   link: {
-    color: "#6A5AFC",
-    fontSize: 14,
+    color: colors.accent,
+    fontSize: typography.size.bodySm,
+    fontFamily: typography.fontFamily.inter,
   },
 });

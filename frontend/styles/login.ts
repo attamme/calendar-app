@@ -1,9 +1,10 @@
 import { StyleSheet } from "react-native";
+import { colors, spacing, typography } from "@/styles/tokens";
 
 export const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.background,
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -17,23 +18,26 @@ export const styles = StyleSheet.create({
     paddingTop: 77,
   },
   title: {
-    fontSize: 24,
+    fontSize: typography.size.title,
+    lineHeight: typography.lineHeight.bodyLg,
     textAlign: "center",
-    color: "#111111",
+    color: colors.textPrimary,
+    fontFamily: typography.fontFamily.inter,
     marginBottom: 20,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: typography.size.body,
     lineHeight: 24,
     textAlign: "center",
-    color: "#111111",
+    color: colors.textPrimary,
+    fontFamily: typography.fontFamily.inter,
     marginBottom: 40,
   },
   actions: {
     flexDirection: "row",
     justifyContent: "space-between",
     gap: 15,
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   actionButton: {
     flex: 1,
@@ -49,26 +53,30 @@ export const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "#D9D9D9",
+    backgroundColor: colors.surfaceMuted,
     alignItems: "center",
     justifyContent: "center",
   },
   socialBadgeText: {
     fontSize: 24,
-    color: "#000000",
+    color: colors.textPrimary,
+    fontFamily: typography.fontFamily.inter,
   },
   guestLink: {
-    color: "#6A5AFC",
-    fontSize: 14,
+    color: colors.accent,
+    fontSize: typography.size.bodySm,
+    fontFamily: typography.fontFamily.inter,
   },
   errorText: {
-    color: "#B3261E",
-    fontSize: 14,
+    color: colors.error,
+    fontSize: typography.size.bodySm,
+    fontFamily: typography.fontFamily.inter,
     marginBottom: 20,
   },
   link: {
-    color: "#6A5AFC",
-    fontSize: 16,
+    color: colors.accent,
+    fontSize: typography.size.body,
+    fontFamily: typography.fontFamily.inter,
     textDecorationLine: "underline",
     marginBottom: 10,
   },

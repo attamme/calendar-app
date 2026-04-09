@@ -12,6 +12,7 @@ type Props = {
   onChangeText?: (text: string) => void;
   keyboardType?: KeyboardTypeOptions;
   autoCapitalize?: TextInputProps["autoCapitalize"];
+  labelHidden?: boolean;
 };
 
 export default function InputText({
@@ -22,6 +23,7 @@ export default function InputText({
   onChangeText,
   keyboardType,
   autoCapitalize,
+  labelHidden,
 }: Props) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
@@ -38,7 +40,7 @@ export default function InputText({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+      {labelHidden ? null : <Text style={styles.label}>{label}</Text>}
       <View style={styles.inputContainer}>
         <TextInput
           autoCapitalize={autoCapitalize}

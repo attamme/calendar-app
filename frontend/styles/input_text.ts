@@ -1,18 +1,20 @@
 import { StyleSheet } from "react-native";
+import { colors, radius, typography } from "@/styles/tokens";
 
 export const styles = StyleSheet.create({
   container: {
     marginBottom: 16,
   },
   label: {
-    color: "#6A6A6A",
-    fontSize: 14,
+    color: colors.textSecondary,
+    fontSize: typography.size.bodySm,
+    fontFamily: typography.fontFamily.inter,
     marginBottom: 8,
   },
   inputContainer: {
     minHeight: 48,
-    borderRadius: 100,
-    backgroundColor: "#D9D9D9",
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceMuted,
     paddingRight: 16,
     flexDirection: "row",
     alignItems: "center",
@@ -21,12 +23,13 @@ export const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 18,
     paddingVertical: 14,
-    fontSize: 16,
-    color: "#000000",
+    fontSize: typography.size.body,
+    color: colors.textPrimary,
+    fontFamily: typography.fontFamily.inter,
   },
   eye: {
     width: 20,
     height: 20,
-    color: "#6A6A6A",
+    color: colors.textSecondary,
   },
 });

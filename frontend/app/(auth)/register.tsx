@@ -77,6 +77,7 @@ export default function Register() {
               value={username}
               onChangeText={setUsername}
               autoCapitalize="none"
+              labelHidden
             />
             <InputText
               label="E-mail"
@@ -85,6 +86,7 @@ export default function Register() {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              labelHidden
             />
             <InputText
               label="Password"
@@ -92,6 +94,7 @@ export default function Register() {
               secure
               value={password}
               onChangeText={setPassword}
+              labelHidden
             />
             <InputText
               label="Repeat password"
@@ -99,6 +102,7 @@ export default function Register() {
               secure
               value={confirmPassword}
               onChangeText={setConfirmPassword}
+              labelHidden
             />
 
             <Button

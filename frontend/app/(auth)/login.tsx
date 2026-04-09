@@ -69,6 +69,7 @@ export default function Login() {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              labelHidden
             />
             <InputText
               label="Password"
@@ -76,6 +77,7 @@ export default function Login() {
               secure
               value={password}
               onChangeText={setPassword}
+              labelHidden
             />
 
             <View style={styles.actions}>

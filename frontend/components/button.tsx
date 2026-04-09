@@ -20,7 +20,9 @@ export default function Button({
       onPress={onPress}
       style={[styles.container, variant === "secondary" ? styles.secondary : styles.primary, style]}
     >
-      <Text style={styles.title}>{title}</Text>
+      <Text numberOfLines={1} style={styles.title}>
+        {title}
+      </Text>
     </TouchableOpacity>
   );
 }
