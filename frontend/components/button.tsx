@@ -1,22 +1,26 @@
-import React from 'react';
-import { StyleProp, Text, TouchableOpacity, ViewStyle } from 'react-native';
-import { styles } from '@/styles/button';
+import { StyleProp, Text, TouchableOpacity, ViewStyle } from "react-native";
+import { styles } from "@/styles/button";
 
 type ButtonProps = {
   title: string;
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
+  variant?: "primary" | "secondary";
 };
-//Buttonil on jh onClick aga Inputil ei ole OnChange ega midagi
-const Button = ({ title, onPress, style}: ButtonProps) => {
+
+export default function Button({
+  title,
+  onPress,
+  style,
+  variant = "primary",
+}: ButtonProps) {
   return (
-    <TouchableOpacity 
-      activeOpacity={0.6} 
-      onPress={onPress} 
-      style={[styles.container, style]} >
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={onPress}
+      style={[styles.container, variant === "secondary" ? styles.secondary : styles.primary, style]}
+    >
       <Text style={styles.title}>{title}</Text>
     </TouchableOpacity>
   );
-};
-
-export default Button;
+}

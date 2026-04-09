@@ -1,36 +1,32 @@
 import { StyleSheet } from "react-native";
-import { colors } from "./colors";
 
 export const styles = StyleSheet.create({
-    container: {
-        marginBottom: 20,
-    },
-    label: {
-        color: colors.text,
-        fontSize: 14,
-        fontWeight: 500,
-        marginVertical: 8
-    },
-    inputContainer: {
-        borderRadius: 100,
-        borderColor: colors.second,
-        backgroundColor: colors.second,
-        borderWidth: 1,
-        flexDirection: "row",
-        alignItems: "center"
-    },
-    input: {
-        paddingHorizontal: 16,
-        paddingVertical: 20,
-        flex: 1
-    },
-    placeholder: {
-        fontSize: 15,
-        color: colors.subtext
-    },
-    eye: {
-        width: 24,
-        height: 24,
-        marginHorizontal: 16
-    }
-})
+  container: {
+    marginBottom: 16,
+  },
+  label: {
+    color: "#6A6A6A",
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  inputContainer: {
+    minHeight: 48,
+    borderRadius: 100,
+    backgroundColor: "#D9D9D9",
+    paddingRight: 16,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  input: {
+    flex: 1,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: "#000000",
+  },
+  eye: {
+    width: 20,
+    height: 20,
+    color: "#6A6A6A",
+  },
+});

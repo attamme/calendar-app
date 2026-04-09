@@ -1,18 +1,22 @@
-import { StyleSheet } from 'react-native';
-import { colors } from '../constants/color'; 
+import { StyleSheet } from "react-native";
+
 export const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.btn_yes,
-    paddingVertical: 20,
-    paddingHorizontal: 8,
+    height: 48,
     borderRadius: 100,
-    width: 152,
-    marginVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+  primary: {
+    backgroundColor: "#747474",
+  },
+  secondary: {
+    backgroundColor: "#747474",
   },
   title: {
-    color: colors.white,
-    textAlign: 'center',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: 'regular',
+    fontWeight: "400",
   },
 });

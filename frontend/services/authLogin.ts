@@ -1,22 +1,34 @@
-import { saveToken } from "@/services/authStorage";
-import {API_URL} from "@/app/config.json";
+import { API_URL } from "@/services/api";
+import { StoredSession } from "@/services/authStorage";
+
+type LoginResponse = string | { token: string; user?: { id?: number; username?: string; email?: string } };
 
 export default async function login(email: string, password: string) {
-  const res = await fetch(`${API_URL}/users/login`, {
+  const response = await fetch(`${API_URL}/users/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "ngrok-skip-browser-warning": "69",
-      
     },
     body: JSON.stringify({ email, password }),
   });
-  if (!res.ok) {
-    throw new Error("Login failed");
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || "Login failed");
   }
 
-  const token = await res.json();
+  const payload = (await response.json()) as LoginResponse;
+  const token = typeof payload === "string" ? payload : payload.token;
+  const user = typeof payload === "string" ? null : payload.user ?? null;
 
+  if (!token) {
+    throw new Error("Login response did not include a token.");
+  }
 
-  await saveToken(token);
+  return {
+    mode: "authenticated",
+    token,
+    user,
+  } satisfies Extract<StoredSession, { mode: "authenticated" }>;
 }

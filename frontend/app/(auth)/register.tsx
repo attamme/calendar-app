@@ -1,35 +1,125 @@
 import { useState } from "react";
-import { View, Text, Keyboard, KeyboardAvoidingView, Pressable, Platform, ScrollView } from "react-native";
-import InputText from "@/components/InputText";
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  Text,
+  View,
+} from "react-native";
+import { useRouter } from "expo-router";
 import Button from "@/components/button";
+import InputText from "@/components/InputText";
+import Logo from "@/components/logo";
+import registerUser from "@/services/authRegister";
+import { useSession } from "@/services/session";
 import { styles } from "@/styles/register";
-import { colors } from "@/styles/colors";
 
 export default function Register() {
+  const router = useRouter();
+  const { continueAsGuest } = useSession();
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-    
+  async function handleRegister() {
+    if (!username.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+      setErrorMessage("Fill in all fields.");
+      return;
+    }
 
-    return (
-       <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.primary }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <ScrollView contentContainerStyle={styles.scrollView} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-            <Pressable onPress={Keyboard.dismiss}>
-                <View style={styles.container}>
-                    <Text style={styles.mainText}>New account</Text>
-                    <Text style={styles.subText}>Register a new account</Text>
-                    <InputText label="Username" placeholder="Username" />
-                    <InputText label="E-mail" placeholder="example@gmail.com"/>
-                    <InputText label="Password" placeholder="***********" secure/>
-                    <InputText label="Repeat password" placeholder="***********" secure/>
-                    <View style={styles.buttonContainer}>
-                        <Button title="Register" onPress={ () => alert("You are trying to register")}/>
-                    </View>
-                    <View style={styles.bottomLinks}>
-                        <Text style={[styles.link, { textAlign: "left" }]}>Already have an account?</Text>
-                        <Text style={[styles.link, { textAlign: "right" }]}>Login as a guest</Text>
-                    </View>
-                </View>
-            </Pressable>
-        </ScrollView>
-       </KeyboardAvoidingView>
-    )
+    if (password !== confirmPassword) {
+      setErrorMessage("Passwords do not match.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage("");
+
+    try {
+      await registerUser({
+        username: username.trim(),
+        email: email.trim(),
+        password,
+      });
+      router.replace("/login");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Registration failed.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleGuestAccess() {
+    await continueAsGuest();
+    router.replace("/home");
+  }
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <Pressable style={styles.pressable} onPress={Keyboard.dismiss}>
+          <Logo />
+
+          <View style={styles.content}>
+            <Text style={styles.title}>New account</Text>
+
+            <InputText
+              label="Username"
+              placeholder="Username"
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+            />
+            <InputText
+              label="E-mail"
+              placeholder="example@gmail.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            <InputText
+              label="Password"
+              placeholder="***********"
+              secure
+              value={password}
+              onChangeText={setPassword}
+            />
+            <InputText
+              label="Repeat password"
+              placeholder="***********"
+              secure
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+            />
+
+            <Button
+              title={isSubmitting ? "Registering..." : "Register"}
+              onPress={handleRegister}
+              style={styles.submitButton}
+            />
+
+            {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+
+            <View style={styles.bottomLinks}>
+              <Text style={styles.link} onPress={() => void handleGuestAccess()}>
+                Login as a guest
+              </Text>
+              <Text style={styles.link} onPress={() => router.push("/login")}>
+                Already have an account?
+              </Text>
+            </View>
+          </View>
+        </Pressable>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
 }

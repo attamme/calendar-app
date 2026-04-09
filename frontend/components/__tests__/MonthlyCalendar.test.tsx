@@ -9,7 +9,7 @@ import {
   getMonthOffsetFromGesture,
 } from "@/components/MonthlyCalendar";
 
-function getStyle(node: renderer.ReactTestInstance) {
+function getStyle(node: any) {
   const { style } = node.props;
 
   if (typeof style === "function") {
@@ -19,20 +19,22 @@ function getStyle(node: renderer.ReactTestInstance) {
   return StyleSheet.flatten(style);
 }
 
-function findByTestId(root: renderer.ReactTestRenderer, testID: string) {
+function findByTestId(root: any, testID: string) {
   return root.root.findByProps({ testID });
 }
 
-function findAllByTestIdPrefix(root: renderer.ReactTestRenderer, prefix: string) {
-  return root.root.findAll((node) => typeof node.props.testID === "string" && node.props.testID.startsWith(prefix));
+function findAllByTestIdPrefix(root: any, prefix: string) {
+  return root.root.findAll(
+    (node: any) => typeof node.props.testID === "string" && node.props.testID.startsWith(prefix),
+  );
 }
 
-function getUniqueTestIds(root: renderer.ReactTestRenderer, prefix: string) {
-  return [...new Set(findAllByTestIdPrefix(root, prefix).map((node) => node.props.testID))];
+function getUniqueTestIds(root: any, prefix: string) {
+  return [...new Set(findAllByTestIdPrefix(root, prefix).map((node: any) => node.props.testID))];
 }
 
 function createTree(element: React.ReactElement) {
-  let tree!: renderer.ReactTestRenderer;
+  let tree: any;
 
   act(() => {
     tree = renderer.create(element);
