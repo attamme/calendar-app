@@ -1,6 +1,5 @@
 import {
   createContext,
-  startTransition,
   useContext,
   useEffect,
   useState,
@@ -39,10 +38,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       try {
         const response = await fetchCurrentUser(storedToken);
-        startTransition(() => {
-          setToken(storedToken);
-          setUser(response.user);
-        });
+        setToken(storedToken);
+        setUser(response.user);
       } catch (error) {
         await deleteToken();
       } finally {
@@ -57,29 +54,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await loginUser(email, password);
     await saveToken(response.token);
 
-    startTransition(() => {
-      setToken(response.token);
-      setUser(response.user);
-    });
+    setToken(response.token);
+    setUser(response.user);
   }
 
   async function signUp(username: string, email: string, password: string) {
     const response = await registerUser(username, email, password);
     await saveToken(response.token);
 
-    startTransition(() => {
-      setToken(response.token);
-      setUser(response.user);
-    });
+    setToken(response.token);
+    setUser(response.user);
   }
 
   async function signOut() {
     await deleteToken();
 
-    startTransition(() => {
-      setToken(null);
-      setUser(null);
-    });
+    setToken(null);
+    setUser(null);
   }
 
   async function refreshUser() {
@@ -88,9 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const response = await fetchCurrentUser(token);
-    startTransition(() => {
-      setUser(response.user);
-    });
+    setUser(response.user);
   }
 
   return (
